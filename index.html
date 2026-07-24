@@ -1057,6 +1057,16 @@ footer a { color: var(--n-500); }
 .new-app-banner-head h3 { font-size: var(--fs-base); font-weight: 700; color: var(--n-900); }
 .new-app-banner-head p { font-size: var(--fs-sm); color: var(--n-500); margin-top: 2px; }
 
+.detail-tabs { display: flex; gap: var(--s-2); border-bottom: 1px solid var(--n-200); margin-bottom: var(--s-2); }
+.detail-tab-btn {
+  padding: var(--s-3) var(--s-4); font-size: var(--fs-sm); font-weight: 600; color: var(--n-500);
+  background: none; border: none; border-bottom: 2px solid transparent; cursor: pointer; margin-bottom: -1px;
+}
+.detail-tab-btn.active { color: var(--n-900); border-bottom-color: var(--accent-orange); }
+.detail-tab-btn:hover { color: var(--n-900); }
+.app-card { cursor: pointer; }
+.app-card .delete-app-btn { position: relative; z-index: 1; }
+
 .upload-row {
   display: grid; grid-template-columns: 24px 1fr auto; gap: var(--s-3); align-items: center;
   background: #fff; border: 1px solid var(--n-200); border-radius: var(--r-sm);
@@ -1506,16 +1516,52 @@ footer a { color: var(--n-500); }
   <div class="dash-main">
     <!-- applications tab -->
     <div class="dash-tab" data-tab="apps">
-      <div class="dash-head">
-        <div>
-          <h1 style="font-size:var(--fs-xl)">My applications</h1>
-          <p id="apps-count">Loading…</p>
+
+      <!-- LIST VIEW -->
+      <div id="apps-list-view">
+        <div class="dash-head">
+          <div>
+            <h1 style="font-size:var(--fs-xl)">My applications</h1>
+            <p id="apps-count">Loading…</p>
+          </div>
+          <button class="btn btn-primary" id="show-new-app-form" type="button">New application</button>
         </div>
-        <a class="btn btn-primary" href="index.html#apply">New application</a>
+
+        <div class="admin-table" id="new-app-form" style="padding:var(--s-5);margin:0 0 var(--s-5);display:none">
+          <h3 style="font-size:var(--fs-base);margin-bottom:var(--s-4)">Start a new application</h3>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--s-3)">
+            <div class="auth-field" style="margin:0">
+              <label for="new-app-citizenship">Citizenship</label>
+              <select id="new-app-citizenship"></select>
+            </div>
+            <div class="auth-field" style="margin:0">
+              <label for="new-app-destination">Where are you going?</label>
+              <select id="new-app-destination"></select>
+            </div>
+            <div class="auth-field" style="margin:0">
+              <label for="new-app-purpose">Purpose</label>
+              <select id="new-app-purpose"><option>Tourism</option><option>Business</option></select>
+            </div>
+            <div class="auth-field" style="margin:0">
+              <label for="new-app-travelers">Travelers</label>
+              <input type="number" id="new-app-travelers" min="1" value="1">
+            </div>
+          </div>
+          <div style="display:flex;gap:var(--s-3);align-items:center;margin-top:var(--s-3)">
+            <button class="btn btn-primary" id="create-app-btn" type="button" style="min-height:44px;padding:0 20px">Create application</button>
+            <button class="btn btn-secondary" id="cancel-new-app-btn" type="button" style="min-height:44px;padding:0 16px">Cancel</button>
+            <span id="new-app-status" style="font-size:var(--fs-xs);color:var(--err)"></span>
+          </div>
+        </div>
+
+        <div class="app-list" id="app-list"><p class="note">Loading your applications…</p></div>
       </div>
 
-      <div class="new-app-banner" id="new-app-banner" style="display:none">
-        <div class="new-app-banner-head">
+      <!-- DETAIL VIEW (a single application, opened like a folder) -->
+      <div id="apps-detail-view" style="display:none">
+        <button class="btn btn-secondary" id="back-to-apps-list" type="button" style="min-height:36px;padding:0 14px;margin-bottom:var(--s-4)">← Back to my applications</button>
+
+        <div class="new-app-banner-head" style="margin-bottom:var(--s-4)">
           <svg class="ic"><use href="#i-check"/></svg>
           <div>
             <h3 id="nab-ref">Application</h3>
@@ -1523,66 +1569,73 @@ footer a { color: var(--n-500); }
           </div>
         </div>
 
-        <div class="admin-table" style="padding:var(--s-5);margin:var(--s-4) 0">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--s-3)">
-            <h3 style="font-size:var(--fs-base)">Trip details</h3>
-            <span id="trip-save-status" style="font-size:var(--fs-xs);color:var(--ok)"></span>
+        <div class="detail-tabs">
+          <button class="detail-tab-btn active" data-detail-tab="form" type="button">Application form</button>
+          <button class="detail-tab-btn" data-detail-tab="documents" type="button">Documents</button>
+        </div>
+
+        <div data-detail-panel="form">
+          <div class="admin-table" style="padding:var(--s-5);margin:var(--s-4) 0">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--s-3)">
+              <h3 style="font-size:var(--fs-base)">Trip details</h3>
+              <span id="trip-save-status" style="font-size:var(--fs-xs);color:var(--ok)"></span>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--s-3)">
+              <div class="auth-field" style="margin:0">
+                <label for="trip-purpose">Purpose</label>
+                <select id="trip-purpose"><option>Tourism</option><option>Business</option></select>
+              </div>
+              <div class="auth-field" style="margin:0">
+                <label for="trip-travelers">Travelers</label>
+                <input type="number" id="trip-travelers" min="1">
+              </div>
+              <div class="auth-field" style="margin:0">
+                <label for="trip-departure">Departure date</label>
+                <input type="date" id="trip-departure">
+              </div>
+              <div class="auth-field" style="margin:0">
+                <label for="trip-return">Return date</label>
+                <input type="date" id="trip-return">
+              </div>
+              <div class="auth-field" style="margin:0;grid-column:1/-1">
+                <label for="trip-preferred-submission">Preferred date to submit at the consulate</label>
+                <input type="date" id="trip-preferred-submission">
+              </div>
+            </div>
+            <button class="btn btn-secondary" id="save-trip-details" type="button" style="margin-top:var(--s-3);min-height:40px;padding:0 16px">Save trip details</button>
           </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--s-3)">
-            <div class="auth-field" style="margin:0">
-              <label for="trip-purpose">Purpose</label>
-              <select id="trip-purpose"><option>Tourism</option><option>Business</option></select>
+
+          <div class="admin-table" style="padding:var(--s-5);margin:var(--s-4) 0">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--s-3)">
+              <h3 style="font-size:var(--fs-base)">Visa application form <span id="quest-complete-badge" style="font-size:var(--fs-xs);font-weight:600"></span></h3>
+              <span id="quest-save-status" style="font-size:var(--fs-xs);color:var(--ok)"></span>
             </div>
-            <div class="auth-field" style="margin:0">
-              <label for="trip-travelers">Travelers</label>
-              <input type="number" id="trip-travelers" min="1">
-            </div>
-            <div class="auth-field" style="margin:0">
-              <label for="trip-departure">Departure date</label>
-              <input type="date" id="trip-departure">
-            </div>
-            <div class="auth-field" style="margin:0">
-              <label for="trip-return">Return date</label>
-              <input type="date" id="trip-return">
-            </div>
-            <div class="auth-field" style="margin:0;grid-column:1/-1">
-              <label for="trip-preferred-submission">Preferred date to submit at the consulate</label>
-              <input type="date" id="trip-preferred-submission">
-            </div>
+            <p class="note" style="margin:0 0 var(--s-4)">This is what we file with the consulate — please make sure it matches your passport exactly.</p>
+            <div id="quest-fields-container"><p class="note">Loading…</p></div>
+            <button class="btn btn-primary" id="save-questionnaire" type="button" style="margin-top:var(--s-4);min-height:40px;padding:0 16px">Save application form</button>
           </div>
-          <button class="btn btn-secondary" id="save-trip-details" type="button" style="margin-top:var(--s-3);min-height:40px;padding:0 16px">Save trip details</button>
         </div>
 
-        <div class="admin-table" style="padding:var(--s-5);margin:var(--s-4) 0">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--s-3)">
-            <h3 style="font-size:var(--fs-base)">Visa application form <span id="quest-complete-badge" style="font-size:var(--fs-xs);font-weight:600"></span></h3>
-            <span id="quest-save-status" style="font-size:var(--fs-xs);color:var(--ok)"></span>
+        <div data-detail-panel="documents" style="display:none">
+          <div class="admin-table" id="booking-info-card" style="padding:var(--s-5);margin:var(--s-4) 0;display:none">
+            <h3 style="font-size:var(--fs-base);margin-bottom:var(--s-3)">Appointment</h3>
+            <p id="booking-info-text" class="note" style="margin:0"></p>
           </div>
-          <p class="note" style="margin:0 0 var(--s-4)">This is what we file with the consulate — please make sure it matches your passport exactly.</p>
-          <div id="quest-fields-container"><p class="note">Loading…</p></div>
-          <button class="btn btn-primary" id="save-questionnaire" type="button" style="margin-top:var(--s-4);min-height:40px;padding:0 16px">Save application form</button>
-        </div>
 
-        <div class="admin-table" id="booking-info-card" style="padding:var(--s-5);margin:var(--s-4) 0;display:none">
-          <h3 style="font-size:var(--fs-base);margin-bottom:var(--s-3)">Appointment</h3>
-          <p id="booking-info-text" class="note" style="margin:0"></p>
-        </div>
+          <p class="hint" style="margin:var(--s-4) 0">Upload these documents to keep your application moving. Our AI checks each one in minutes.</p>
+          <div id="doc-checklist"></div>
 
-        <p class="hint" style="margin:var(--s-4) 0">Upload these documents to keep your application moving. Our AI checks each one in minutes.</p>
-        <div id="doc-checklist"></div>
+          <div class="admin-table" id="payment-section" style="padding:var(--s-5);margin:var(--s-4) 0;display:none;text-align:center">
+            <p class="note" style="margin:0 0 var(--s-3)">Everything's filled in — pay now to send your application and documents for processing.</p>
+            <button class="btn btn-primary" id="pay-now-btn" type="button" style="min-height:44px;padding:0 24px">Pay now</button>
+            <p id="pay-status" style="font-size:var(--fs-xs);color:var(--err);margin-top:var(--s-3)"></p>
+          </div>
 
-        <div class="admin-table" id="payment-section" style="padding:var(--s-5);margin:var(--s-4) 0;display:none;text-align:center">
-          <p class="note" style="margin:0 0 var(--s-3)">Everything's filled in — pay now to send your application and documents for processing.</p>
-          <button class="btn btn-primary" id="pay-now-btn" type="button" style="min-height:44px;padding:0 24px">Pay now</button>
-          <p id="pay-status" style="font-size:var(--fs-xs);color:var(--err);margin-top:var(--s-3)"></p>
-        </div>
-
-        <div class="admin-table" id="paid-confirmation" style="padding:var(--s-5);margin:var(--s-4) 0;display:none;background:var(--ok-tint);border-color:#bfe3d2">
-          <p class="note" style="margin:0;color:var(--n-900)"><b>✓ Documents successfully sent.</b> You'll receive an email as soon as a submission slot is available.</p>
+          <div class="admin-table" id="paid-confirmation" style="padding:var(--s-5);margin:var(--s-4) 0;display:none;background:var(--ok-tint);border-color:#bfe3d2">
+            <p class="note" style="margin:0;color:var(--n-900)"><b>✓ Documents successfully sent.</b> You'll receive an email as soon as a submission slot is available.</p>
+          </div>
         </div>
       </div>
-
-      <div class="app-list" id="app-list"><p class="note">Loading your applications…</p></div>
     </div>
 
     <!-- payments tab -->
@@ -2294,16 +2347,14 @@ function loadMyApplications() {
           "<div><div class='ref'>AV-" + app.id.slice(0, 8) + " · " + fmtDateTime(app.createdAt) + "</div>" +
           "<div class='route'>" + app.country + " · " + app.purpose + " visa</div>" + apptLine + "</div>" +
           "<span class='status-pill " + s.cls + "'><span class='dot'></span>" + s.label + "</span>" +
-          "<div style='display:flex;gap:8px'>" +
-          "<button type='button' class='btn btn-secondary upload-docs-btn' style='min-height:40px;padding:0 16px'>Upload documents</button>" +
-          "<button type='button' class='btn btn-secondary delete-app-btn' style='min-height:40px;padding:0 16px;color:var(--err);border-color:var(--err)'>Delete</button>" +
-          "</div>";
+          "<button type='button' class='btn btn-secondary delete-app-btn' style='min-height:40px;padding:0 16px;color:var(--err);border-color:var(--err)'>Delete</button>";
 
-        card.querySelector(".upload-docs-btn").addEventListener("click", function () {
-          openDocumentChecklist(app);
+        card.addEventListener("click", function () {
+          showAppDetailView(app);
         });
 
-        card.querySelector(".delete-app-btn").addEventListener("click", function () {
+        card.querySelector(".delete-app-btn").addEventListener("click", function (e) {
+          e.stopPropagation();
           if (!confirm("Delete this application? This can't be undone.")) return;
           fetch(API_BASE + "/api/applications/" + app.id, {
           credentials: "include",
@@ -2336,10 +2387,109 @@ function loadMyApplications() {
 // re-opening doesn't reset progress back to blank "Upload" buttons.
 var currentChecklistApp = null;
 
+// ---------- list view <-> detail view ("folders") ----------
+function showAppsListView() {
+  document.getElementById("apps-detail-view").style.display = "none";
+  document.getElementById("apps-list-view").style.display = "";
+  document.getElementById("new-app-form").style.display = "none";
+  currentChecklistApp = null;
+  window.scrollTo(0, 0);
+}
+
+function showAppDetailView(application) {
+  document.getElementById("apps-list-view").style.display = "none";
+  document.getElementById("apps-detail-view").style.display = "";
+  switchDetailTab("form");
+  window.scrollTo(0, 0);
+  openDocumentChecklist(application);
+}
+
+function switchDetailTab(tab) {
+  document.querySelectorAll(".detail-tab-btn").forEach(function (b) {
+    b.classList.toggle("active", b.dataset.detailTab === tab);
+  });
+  document.querySelectorAll("[data-detail-panel]").forEach(function (p) {
+    p.style.display = p.dataset.detailPanel === tab ? "" : "none";
+  });
+}
+document.querySelectorAll(".detail-tab-btn").forEach(function (btn) {
+  btn.addEventListener("click", function () { switchDetailTab(btn.dataset.detailTab); });
+});
+
+var backToListBtn = document.getElementById("back-to-apps-list");
+if (backToListBtn) backToListBtn.addEventListener("click", showAppsListView);
+
+// ---------- create a new application right from the dashboard ----------
+var showNewAppFormBtn = document.getElementById("show-new-app-form");
+if (showNewAppFormBtn) {
+  showNewAppFormBtn.addEventListener("click", function () {
+    var form = document.getElementById("new-app-form");
+    var opening = form.style.display === "none";
+    form.style.display = opening ? "" : "none";
+    if (opening) populateNewAppSelects();
+  });
+  document.getElementById("cancel-new-app-btn").addEventListener("click", function () {
+    document.getElementById("new-app-form").style.display = "none";
+  });
+}
+
+function populateNewAppSelects() {
+  var citSel = document.getElementById("new-app-citizenship");
+  var destSel = document.getElementById("new-app-destination");
+  citSel.innerHTML = NATIONALITIES.map(function (n) { return "<option>" + n + "</option>"; }).join("");
+  function refreshDest() {
+    var chosen = citSel.value;
+    var available = Object.keys(DEST).filter(function (name) {
+      return DEST[name].excludedCitizenships.indexOf(chosen) === -1;
+    });
+    destSel.innerHTML = available.map(function (n) { return "<option>" + n + "</option>"; }).join("");
+  }
+  citSel.onchange = refreshDest;
+  if (Object.keys(DEST).length) {
+    refreshDest();
+  } else {
+    loadCountriesFromApi().then(refreshDest);
+  }
+}
+
+var createAppBtn = document.getElementById("create-app-btn");
+if (createAppBtn) {
+  createAppBtn.addEventListener("click", function () {
+    var destName = document.getElementById("new-app-destination").value;
+    var destInfo = DEST[destName];
+    var status = document.getElementById("new-app-status");
+    if (!destInfo) { status.textContent = "Pick a destination."; return; }
+    status.textContent = "Creating…";
+    createAppBtn.disabled = true;
+    fetch(API_BASE + "/api/applications", {
+      credentials: "include", method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + authToken },
+      body: JSON.stringify({
+        countryId: destInfo.id,
+        purpose: document.getElementById("new-app-purpose").value,
+        travelers: Number(document.getElementById("new-app-travelers").value) || 1
+      })
+    })
+      .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
+      .then(function (r) {
+        createAppBtn.disabled = false;
+        if (!r.ok) { status.textContent = r.data.error || "Could not create application."; return; }
+        status.textContent = "";
+        document.getElementById("new-app-form").style.display = "none";
+        loadMyApplications();
+        showAppDetailView(r.data);
+      })
+      .catch(function () {
+        createAppBtn.disabled = false;
+        status.textContent = "Couldn't reach the server — try again.";
+      });
+  });
+}
+
+
 function openDocumentChecklist(application) {
   currentChecklistApp = application;
   var route = application.country + " · " + application.purpose + " visa";
-  var banner = document.getElementById("new-app-banner");
   document.getElementById("nab-ref").textContent = "AV-" + application.id.slice(0, 8);
   document.getElementById("nab-route").textContent =
     route + (application.travelers ? " · " + application.travelers + " traveler" + (application.travelers > 1 ? "s" : "") : "");
@@ -2386,8 +2536,6 @@ function openDocumentChecklist(application) {
 
   var checklist = document.getElementById("doc-checklist");
   checklist.innerHTML = "<p class='note'>Loading document requirements…</p>";
-  banner.style.display = "block";
-  banner.scrollIntoView({ behavior: "smooth", block: "start" });
 
   Promise.all([
     fetch(API_BASE + "/api/countries/" + application.countryId + "/documents", { credentials: "include" })
@@ -2647,9 +2795,12 @@ function renderChecklist(application, checklist, byType, requiredDocs) {
         initialLabel = "Upload a new file";
       }
     }
+    var downloadHtml = (existing && existing.status === "passed" && existing.hasFile)
+      ? "<a href='" + API_BASE + "/api/documents/" + existing.id + "/download' target='_blank' style='font-size:12px;margin-left:8px'>Download</a>"
+      : "";
     row.innerHTML =
       "<svg class='ic sm'><use href='#i-doc'/></svg>" +
-      "<div><div class='name'>" + doc.docName + "</div><div class='sub'>" + initialSub + "</div></div>" +
+      "<div><div class='name'>" + doc.docName + "</div><div class='sub'>" + initialSub + downloadHtml + "</div></div>" +
       "<label class='btn btn-secondary' style='min-height:36px;padding:0 16px;cursor:pointer'>" +
       initialLabel + "<input type='file' accept='image/*,application/pdf' style='display:none'></label>";
     var fileInput = row.querySelector("input[type=file]");
@@ -2683,7 +2834,8 @@ function renderChecklist(application, checklist, byType, requiredDocs) {
             }
             if (r.data.status === "passed") {
               row.classList.add("done");
-              subEl.textContent = r.data.reason || "Looks good.";
+              subEl.innerHTML = (r.data.reason || "Looks good.") +
+                "<a href='" + API_BASE + "/api/documents/" + r.data.id + "/download' target='_blank' style='font-size:12px;margin-left:8px'>Download</a>";
               labelNode.textContent = "Re-upload";
             } else {
               var label = r.data.status === "failed" ? "Rejected" : "Sent for human review";
@@ -3076,6 +3228,7 @@ document.addEventListener("click", function (e) {
   showPage(page, anchor);
   if (page === "dashboard" && isAuthed) {
     updateDashboardIdentity();
+    showAppsListView();
     loadMyApplications();
   }
   if (page === "dashboard") {
@@ -3103,6 +3256,7 @@ fetch(API_BASE + "/api/auth/me", { credentials: "include" })
     updateDashboardIdentity();
     if (location.hash === "#dashboard") {
       showPage("dashboard");
+      showAppsListView();
       loadMyApplications();
     }
   });
@@ -3292,12 +3446,7 @@ if (wizOverlay) {
 
     function doCreate() {
       showPage("dashboard");
-      var banner = document.getElementById("new-app-banner");
-      banner.style.display = "block";
-      document.getElementById("nab-ref").textContent = "Creating application…";
-      document.getElementById("nab-route").textContent = "";
-      document.getElementById("doc-checklist").innerHTML = "";
-      banner.scrollIntoView({ behavior: "smooth", block: "start" });
+      showAppsListView();
 
       fetch(API_BASE + "/api/applications", {
           credentials: "include",
@@ -3312,15 +3461,13 @@ if (wizOverlay) {
         .then(function (r) {
           if (!r.ok) {
             if (r.status === 401) { handleSessionExpired(); return; }
-            document.getElementById("nab-ref").textContent = "Couldn't create application";
-            document.getElementById("nab-route").textContent = r.data.error || "Please try again.";
+            alert(r.data.error || "Couldn't create the application — please try again.");
             return;
           }
           addNewApplicationToDashboard(r.data);
         })
         .catch(function () {
-          document.getElementById("nab-ref").textContent = "Couldn't reach the server";
-          document.getElementById("nab-route").textContent = "It may be waking up (free hosting sleeps when idle) — try again in a few seconds.";
+          alert("Couldn't reach the server. It may be waking up — try again in a few seconds.");
         });
     }
 
@@ -3334,7 +3481,7 @@ if (wizOverlay) {
 
   function addNewApplicationToDashboard(application) {
     loadMyApplications(); // refresh the list with the new one included
-    openDocumentChecklist(application);
+    showAppDetailView(application);
   }
 
   function renderWizard() {
