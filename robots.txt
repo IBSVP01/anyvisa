@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /admin.html
+
+Sitemap: https://ibsvp01.github.io/anyvisa/sitemap.xml
