@@ -2,31 +2,41 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://ibsvp01.github.io/anyvisa/</loc>
+    <lastmod>2026-07-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://ibsvp01.github.io/anyvisa/requirements.html</loc>
+    <loc>https://ibsvp01.github.io/anyvisa/about.html</loc>
+    <lastmod>2026-07-29</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://ibsvp01.github.io/anyvisa/blog.html</loc>
-    <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://ibsvp01.github.io/anyvisa/blog.html</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <!-- AUTO-GENERATED BLOG POSTS START -->
+  <!-- Entries below this line are written by generate-sitemap.js — don't
+       hand-edit them, they'll be overwritten on the next run. -->
+  <!-- AUTO-GENERATED BLOG POSTS END -->
+  <url>
     <loc>https://ibsvp01.github.io/anyvisa/privacy.html</loc>
+    <lastmod>2026-07-29</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
     <loc>https://ibsvp01.github.io/anyvisa/terms.html</loc>
+    <lastmod>2026-07-29</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
     <loc>https://ibsvp01.github.io/anyvisa/disclaimer.html</loc>
+    <lastmod>2026-07-29</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
