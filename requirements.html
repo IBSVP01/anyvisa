@@ -3,9 +3,28 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Visa Requirements & Documents Guide — AnyVisa</title>
-<meta name="description" content="What you need for your visa application — documents, fees, and requirements by destination.">
-<link rel="canonical" href="https://ibsvp01.github.io/anyvisa/requirements.html">
+<title id="req-title-tag">Visa Requirements & Documents Guide — AnyVisa</title>
+<meta id="req-desc-tag" name="description" content="What you need for your visa application — documents, fees, and requirements by destination.">
+<link id="req-canonical-tag" rel="canonical" href="https://ibsvp01.github.io/anyvisa/requirements.html">
+
+<!-- favicon -->
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="site.webmanifest">
+<meta name="theme-color" content="#4338ca">
+
+<!-- Open Graph / Twitter -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="AnyVisa">
+<meta id="req-og-title" property="og:title" content="Visa Requirements & Documents Guide — AnyVisa">
+<meta id="req-og-desc" property="og:description" content="What you need for your visa application — documents, fees, and requirements by destination.">
+<meta id="req-og-url" property="og:url" content="https://ibsvp01.github.io/anyvisa/requirements.html">
+<meta property="og:image" content="https://ibsvp01.github.io/anyvisa/og-image.png">
+<meta property="og:locale" content="en_GB">
+<meta name="twitter:card" content="summary_large_image">
+<meta id="req-twitter-title" name="twitter:title" content="Visa Requirements & Documents Guide — AnyVisa">
+<meta id="req-twitter-desc" name="twitter:description" content="What you need for your visa application — documents, fees, and requirements by destination.">
+<meta name="twitter:image" content="https://ibsvp01.github.io/anyvisa/og-image.png">
 <style>/* ============================================================
    AnyVisa v5 — systematic UI
    Zero external dependencies. System font stack.
@@ -1176,8 +1195,17 @@ footer a { color: var(--n-500); }
 
 
 <div class="container">
-  <div class="crumb" style="padding-top:var(--s-4)"><a href="index.html">Home</a> / France Schengen visa</div>
+  <div class="crumb" style="padding-top:var(--s-4)"><a href="index.html">Home</a> / <span id="crumb-country">Visa requirements</span></div>
 
+  <!-- shown only when ?country= isn't specified: a real list of every
+       destination AnyVisa actually files to, pulled from the live API -->
+  <div id="country-picker" style="display:none">
+    <h1 style="margin:var(--s-4) 0 var(--s-2)">Visa requirements by destination</h1>
+    <p class="note" style="margin-bottom:var(--s-6)">Choose where you're travelling to see the exact documents and fees.</p>
+    <div id="country-picker-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:var(--s-3)"></div>
+  </div>
+
+  <div id="country-detail" style="display:none">
   <div class="dest-banner">
     <svg viewBox="0 0 1000 190" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
       <defs>
@@ -1192,49 +1220,41 @@ footer a { color: var(--n-500); }
       <path d="M0 150 Q 250 120 500 150 T 1000 150 V190 H0 Z" fill="#ffffff" opacity="0.06"/>
       <path d="M0 170 Q 250 145 500 170 T 1000 170 V190 H0 Z" fill="#ffffff" opacity="0.08"/>
       <g fill="#ffffff" opacity="0.9">
-        <text x="60" y="105" font-family="Arial" font-size="30" font-weight="800" fill="#ffffff">France</text>
-        <text x="60" y="128" font-family="Arial" font-size="13" fill="#dbe9f2">Schengen short-stay visa</text>
+        <text id="banner-country-name" x="60" y="105" font-family="Arial" font-size="30" font-weight="800" fill="#ffffff">&#160;</text>
+        <text id="banner-subtitle" x="60" y="128" font-family="Arial" font-size="13" fill="#dbe9f2">&#160;</text>
       </g>
     </svg>
   </div>
+  </div>
 </div>
 
-<div class="container req-shell">
+<div class="container req-shell" id="req-shell" style="display:none">
   <div class="prose" style="max-width:none">
-    <h2 class="req-h2">France Visa Information<span class="bar"></span></h2>
-    <div class="info-chips">
-      <div class="info-chip"><div class="badge"><svg class="ic sm"><use href="#i-doc"/></svg></div><div><div class="k">Visa Type:</div><div class="v">Sticker</div></div></div>
-      <div class="info-chip"><div class="badge"><svg class="ic sm"><use href="#i-clock"/></svg></div><div><div class="k">Length of Stay:</div><div class="v">up to 90 days</div></div></div>
-      <div class="info-chip"><div class="badge"><svg class="ic sm"><use href="#i-check"/></svg></div><div><div class="k">Type:</div><div class="v">Short-term</div></div></div>
-      <div class="info-chip"><div class="badge"><svg class="ic sm"><use href="#i-gbp"/></svg></div><div><div class="k">Entry:</div><div class="v">Multiple</div></div></div>
-    </div>
+    <h2 class="req-h2" id="req-h2"><span class="bar"></span></h2>
+    <div class="info-chips" id="info-chips"></div>
 
     <h2 style="font-size:var(--fs-lg);margin:var(--s-8) 0 var(--s-3)">Documents you'll need</h2>
-    <ul class="checklist">
-      <li><svg class="ic sm"><use href="#i-check"/></svg><span>Passport valid 3+ months beyond return, issued within 10 years</span></li>
-      <li><svg class="ic sm"><use href="#i-check"/></svg><span>Completed application form and one digital photo</span></li>
-      <li><svg class="ic sm"><use href="#i-check"/></svg><span>UK residence permit valid 3+ months beyond return</span></li>
-      <li><svg class="ic sm"><use href="#i-check"/></svg><span>Travel insurance with €30,000 medical cover — can be added at checkout</span></li>
-      <li><svg class="ic sm"><use href="#i-check"/></svg><span>Proof of accommodation and return transport</span></li>
+    <ul class="checklist" id="doc-checklist">
+      <li class="note">Loading…</li>
     </ul>
 
-    <h2 style="font-size:var(--fs-lg);margin:var(--s-7) 0 var(--s-3)">Why Schengen via AnyVisa?</h2>
-    <p>Biometrics are required in person at the visa centre, so the appointment itself is the bottleneck — not the paperwork. Our platform books the earliest available slot automatically and keeps your file checked and ready, so the visit is a formality.</p>
+    <h2 style="font-size:var(--fs-lg);margin:var(--s-7) 0 var(--s-3)" id="why-h2">Why file via AnyVisa?</h2>
+    <p id="why-p"></p>
   </div>
 
   <aside class="order-card">
     <div class="order-banner">
       <svg class="ic" style="width:30px;height:30px"><use href="#i-shield"/></svg>
-      <div class="t">Schengen visa<br>application</div>
+      <div class="t" id="order-title">Visa<br>application</div>
     </div>
     <div class="order-body">
-      <div class="order-row"><span class="lbl"><a href="#">Appointment Fee</a> × 1</span><span class="val">£126</span></div>
-      <div class="order-row"><span class="lbl"><a href="#">Service Fee</a> × 1</span><span class="val">£69</span></div>
+      <div class="order-row"><span class="lbl"><a href="#">Government Fee</a> × 1</span><span class="val" id="gov-fee-val">—</span></div>
+      <div class="order-row"><span class="lbl"><a href="#">Service Fee</a> × 1</span><span class="val" id="service-fee-val">—</span></div>
       <div class="order-row"><span class="lbl"><svg class="ic sm"><use href="#i-doc"/></svg>Express Appointment</span><span class="val free">Free</span></div>
       <div class="order-row" style="border-bottom:none"><span class="lbl"><svg class="ic sm"><use href="#i-doc"/></svg>Form Filling</span><span class="val free">Free</span></div>
-      <div class="order-total"><span class="lbl">Total Amount</span><span class="val">£195</span></div>
-      <a class="btn btn-primary btn-block" href="index.html#slip-form">Start Application</a>
-      <a class="order-alt" href="dashboard.html">Already have a Schengen appointment?</a>
+      <div class="order-total"><span class="lbl">Total Amount</span><span class="val" id="total-val">—</span></div>
+      <a class="btn btn-primary btn-block" href="index.html#apply">Start Application</a>
+      <a class="order-alt" href="index.html#dashboard">Already have an appointment?</a>
     </div>
     <div class="order-help">
       <div><div class="t">Have Queries?</div><div class="s">Documents, process, price, etc.</div></div>
@@ -1252,7 +1272,7 @@ footer a { color: var(--n-500); }
     <div class="footer-grid">
       <div>
         <a class="brand" href="index.html"><span class="word"><b>ANY</b>VISA</span></a>
-        <p style="margin-top:12px;max-width:36ch">Automated visa processing for 190+ destinations. Filing applications since 2008 — fully online since 2026.</p>
+        <p style="margin-top:12px;max-width:36ch">Automated visa processing for 190+ destinations. Filing applications since 2007 — fully online since 2026.</p>
       </div>
       <div>
         <h4>Product</h4>
@@ -1278,5 +1298,123 @@ footer a { color: var(--n-500); }
   </div>
 </footer>
 
+<script>
+var API_BASE = "https://dedicate-tusk-storewide.ngrok-free.dev";
+
+var SCHENGEN_IDS = [
+  "austria","belgium","croatia","czech-republic","denmark","estonia","finland","france","germany",
+  "greece","hungary","iceland","italy","latvia","liechtenstein","lithuania","luxembourg","malta",
+  "netherlands","norway","poland","portugal","slovakia","slovenia","spain","sweden","switzerland"
+];
+
+function esc(s) { return (s === undefined || s === null) ? "" : String(s).replace(/</g, "&lt;"); }
+
+function setMeta(title, desc, url) {
+  document.getElementById("req-title-tag").textContent = title;
+  document.getElementById("req-desc-tag").setAttribute("content", desc);
+  document.getElementById("req-canonical-tag").setAttribute("href", url);
+  document.getElementById("req-og-title").setAttribute("content", title);
+  document.getElementById("req-og-desc").setAttribute("content", desc);
+  document.getElementById("req-og-url").setAttribute("content", url);
+  document.getElementById("req-twitter-title").setAttribute("content", title);
+  document.getElementById("req-twitter-desc").setAttribute("content", desc);
+}
+
+function showPicker(countries, notice) {
+  document.getElementById("country-picker").style.display = "block";
+  document.getElementById("country-detail").style.display = "none";
+  document.getElementById("req-shell").style.display = "none";
+  document.getElementById("crumb-country").textContent = "Visa requirements";
+  if (notice) {
+    var p = document.createElement("p");
+    p.className = "note";
+    p.style.color = "var(--err, #c0392b)";
+    p.textContent = notice;
+    document.getElementById("country-picker").insertBefore(p, document.getElementById("country-picker-grid"));
+  }
+  var grid = document.getElementById("country-picker-grid");
+  var sorted = countries.slice().sort(function (a, b) { return a.name.localeCompare(b.name); });
+  grid.innerHTML = sorted.map(function (c) {
+    return "<a href='requirements.html?country=" + encodeURIComponent(c.id) + "' style='display:block;padding:var(--s-4);border:1px solid var(--n-200);border-radius:10px;text-decoration:none;color:var(--n-800)'>" +
+      "<div style='font-weight:700'>" + esc(c.name) + "</div>" +
+      "<div class='note' style='margin-top:4px'>" + (c.isEvisa ? "e-Visa" : "Consular visa") + " · from £" + (c.governmentFee + c.serviceFee) + "</div>" +
+      "</a>";
+  }).join("");
+}
+
+function showCountry(country) {
+  document.getElementById("country-picker").style.display = "none";
+  document.getElementById("country-detail").style.display = "block";
+  document.getElementById("req-shell").style.display = "grid";
+
+  var isSchengen = SCHENGEN_IDS.indexOf(country.id) !== -1;
+  var subtitle = isSchengen ? "Schengen short-stay visa" : (country.isEvisa ? "e-Visa application" : "Visa application");
+
+  document.getElementById("crumb-country").textContent = country.name + " visa";
+  document.getElementById("banner-country-name").textContent = country.name;
+  document.getElementById("banner-subtitle").textContent = subtitle;
+  document.getElementById("req-h2").innerHTML = country.name + " Visa Information<span class='bar'></span>";
+  document.getElementById("order-title").innerHTML = country.name + " visa<br>application";
+
+  var pageUrl = "https://ibsvp01.github.io/anyvisa/requirements.html?country=" + encodeURIComponent(country.id);
+  setMeta(
+    country.name + " Visa Requirements & Documents — AnyVisa",
+    "What you need for a " + country.name + " visa — documents, fees, and how AnyVisa files it for you.",
+    pageUrl
+  );
+
+  document.getElementById("info-chips").innerHTML =
+    "<div class='info-chip'><div class='badge'><svg class=\"ic sm\"><use href=\"#i-doc\"/></svg></div><div><div class='k'>Visa Type:</div><div class='v'>" + (country.isEvisa ? "e-Visa" : "Consular visa") + "</div></div></div>" +
+    "<div class='info-chip'><div class='badge'><svg class=\"ic sm\"><use href=\"#i-check\"/></svg></div><div><div class='k'>Filed:</div><div class='v'>" + (country.isEvisa ? "Fully online" : "Online + consulate visit") + "</div></div></div>" +
+    "<div class='info-chip'><div class='badge'><svg class=\"ic sm\"><use href=\"#i-gbp\"/></svg></div><div><div class='k'>Government Fee:</div><div class='v'>£" + country.governmentFee + "</div></div></div>" +
+    "<div class='info-chip'><div class='badge'><svg class=\"ic sm\"><use href=\"#i-gbp\"/></svg></div><div><div class='k'>Service Fee:</div><div class='v'>£" + country.serviceFee + "</div></div></div>";
+
+  document.getElementById("why-h2").textContent = isSchengen ? "Why Schengen via AnyVisa?" : "Why file via AnyVisa?";
+  document.getElementById("why-p").textContent = isSchengen
+    ? "Biometrics are required in person at the visa centre, so the appointment itself is the bottleneck — not the paperwork. Our platform books the earliest available slot automatically and keeps your file checked and ready, so the visit is a formality."
+    : (country.isEvisa
+        ? "No appointment needed — " + country.name + "'s e-visa is filed entirely online. AnyVisa checks every document before submission, so there's nothing to redo if something's missing."
+        : "Your file is prepared and checked online first, then AnyVisa books your consulate appointment for the parts that must happen in person, so the visit itself takes minutes.");
+
+  document.getElementById("gov-fee-val").textContent = "£" + country.governmentFee;
+  document.getElementById("service-fee-val").textContent = "£" + country.serviceFee;
+  document.getElementById("total-val").textContent = "£" + (country.governmentFee + country.serviceFee);
+
+  fetch(API_BASE + "/api/countries/" + encodeURIComponent(country.id) + "/documents?purpose=Tourism")
+    .then(function (res) { return res.ok ? res.json() : []; })
+    .then(function (docs) {
+      var list = document.getElementById("doc-checklist");
+      if (!docs.length) { list.innerHTML = "<li class='note'>Document list coming soon for this destination.</li>"; return; }
+      list.innerHTML = docs.map(function (d) {
+        var text = d.docName + (d.docSub ? " — " + d.docSub : "");
+        return "<li><svg class=\"ic sm\"><use href=\"#i-check\"/></svg><span>" + esc(text) + "</span></li>";
+      }).join("");
+    })
+    .catch(function () {
+      document.getElementById("doc-checklist").innerHTML = "<li class='note'>Couldn't load documents right now — try again shortly.</li>";
+    });
+}
+
+var countryParam = new URLSearchParams(location.search).get("country");
+
+fetch(API_BASE + "/api/countries")
+  .then(function (res) { return res.json(); })
+  .then(function (countries) {
+    if (!countryParam) {
+      showPicker(countries);
+      return;
+    }
+    var match = countries.find(function (c) { return c.id === countryParam; });
+    if (!match) {
+      showPicker(countries, "We don't recognise \"" + countryParam + "\" as a destination — pick one below.");
+      return;
+    }
+    showCountry(match);
+  })
+  .catch(function () {
+    document.getElementById("country-picker").style.display = "block";
+    document.getElementById("country-picker-grid").innerHTML = "<p class='note'>Couldn't load destinations right now — try again shortly.</p>";
+  });
+</script>
 </body>
 </html>
