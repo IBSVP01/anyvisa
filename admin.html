@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>AnyVisa — Admin</title>
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="robots" content="noindex, nofollow">
 <style>
 /* ============================================================
    AnyVisa v5 — systematic UI
@@ -1600,7 +1603,12 @@ function renderPricingTable(countries) {
     tr.querySelector(".delete-country").addEventListener("click", function () {
       if (!confirm('Remove ' + c.name + '? This cannot be undone.')) return;
       fetch(API_BASE + "/api/admin/countries/" + c.id, { method: "DELETE", headers: authHeaders() })
-        .then(function () { loadPricing(); });
+        .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
+        .then(function (r) {
+          if (!r.ok) { alert(r.data.error || "Could not delete this country."); return; }
+          loadPricing();
+        })
+        .catch(function () { alert("Couldn't reach the server."); });
     });
 
     var manageTr = document.createElement("tr");
@@ -2027,13 +2035,45 @@ function renderAppAdminBody(app, body) {
           if (!docs.length) { docsList.innerHTML = "<p class='note'>No documents uploaded yet.</p>"; return; }
           docsList.innerHTML = docs.map(function (d) {
             var statusColor = d.status === "passed" ? "var(--ok)" : d.status === "failed" ? "var(--err)" : "var(--warn)";
-            var link = d.hasFile
-              ? "<a href='" + API_BASE + "/api/documents/" + d.id + "/download' target='_blank'>View file</a>"
-              : "<i style='color:var(--n-400)'>(file not available)</i>";
-            return "<div style='display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--n-200);font-size:var(--fs-xs)'>" +
-              "<span><b>" + d.docType + "</b> — <span style='color:" + statusColor + "'>" + d.status + "</span>" + (d.reviewedByHuman ? " (human-reviewed)" : "") + "</span>" +
-              link + "</div>";
+            var fileUrl = API_BASE + "/api/documents/" + d.id + "/download";
+            var isImage = /\.(jpe?g|png|webp|gif)$/i.test(d.docType) || d.hasFile; // preview attempted for any file; falls back cleanly if it's a PDF
+            var preview = d.hasFile
+              ? "<a href='" + fileUrl + "' target='_blank'><img src='" + fileUrl + "' alt='" + d.docType + "' style='width:64px;height:64px;object-fit:cover;border-radius:6px;border:1px solid var(--n-200);flex-shrink:0' onerror=\"this.outerHTML='<span style=&quot;font-size:11px;color:var(--n-400)&quot;>PDF/file — click View</span>'\"></a>"
+              : "<span style='font-size:11px;color:var(--n-400)'>(no file)</span>";
+            return "<div class='doc-review-row' data-doc='" + d.id + "' style='display:flex;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--n-200);font-size:var(--fs-xs)'>" +
+              preview +
+              "<div style='flex:1;min-width:0'>" +
+                "<div><b>" + d.docType + "</b> — <span style='color:" + statusColor + "' class='doc-status-label'>" + d.status + "</span>" + (d.reviewedByHuman ? " <span style='color:var(--n-400)'>(human-reviewed)</span>" : "") + "</div>" +
+                (d.reason ? "<div style='color:var(--n-500);margin-top:2px'>" + d.reason.replace(/</g, "&lt;") + "</div>" : "") +
+                (d.hasFile ? "<a href='" + fileUrl + "' target='_blank'>View full file</a>" : "") +
+              "</div>" +
+              (d.hasFile ? "<div style='display:flex;gap:6px;flex-shrink:0'>" +
+                "<button class='btn btn-secondary doc-approve-btn' type='button' style='min-height:30px;padding:0 10px;font-size:11px;border-color:var(--ok);color:var(--ok)'>Approve</button>" +
+                "<button class='btn btn-secondary doc-reject-btn' type='button' style='min-height:30px;padding:0 10px;font-size:11px;border-color:var(--err);color:var(--err)'>Reject</button>" +
+              "</div>" : "") +
+              "</div>";
           }).join("");
+
+          docsList.querySelectorAll(".doc-approve-btn, .doc-reject-btn").forEach(function (btn) {
+            btn.addEventListener("click", function () {
+              var row = btn.closest(".doc-review-row");
+              var docId = row.dataset.doc;
+              var action = btn.classList.contains("doc-approve-btn") ? "approve" : "reject";
+              btn.disabled = true;
+              fetch(API_BASE + "/api/admin/documents/" + docId + "/resolve", {
+                method: "POST", headers: authHeaders(), body: JSON.stringify({ action: action })
+              })
+                .then(function (res) { return res.json(); })
+                .then(function (r) {
+                  if (!r.ok) { btn.disabled = false; alert(r.error || "Could not update."); return; }
+                  var label = row.querySelector(".doc-status-label");
+                  label.textContent = r.status;
+                  label.style.color = r.status === "passed" ? "var(--ok)" : "var(--err)";
+                  row.querySelectorAll("button").forEach(function (b) { b.remove(); });
+                })
+                .catch(function () { btn.disabled = false; alert("Couldn't reach the server."); });
+            });
+          });
         })
         .catch(function () {
           body.querySelector(".admin-docs-list").innerHTML = "<p class='note'>Couldn't load documents.</p>";
