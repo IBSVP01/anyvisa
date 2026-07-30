@@ -1141,7 +1141,7 @@ footer a { color: var(--n-500); }
 
 <!-- ======================= LOGIN GATE ======================= -->
 <div id="admin-login-screen" style="display:flex;justify-content:center;padding:80px 20px">
-  <div class="auth-panel" style="position:static;box-shadow:var(--shadow-2);border:1px solid var(--n-200)">
+  <div class="auth-panel" style="position:static;box-shadow:var(--shadow-2);border:1px solid var(--n-200)" id="admin-signin-panel">
     <div class="auth-head">
       <h3>Staff sign in</h3>
       <p>Admin access only</p>
@@ -1156,8 +1156,47 @@ footer a { color: var(--n-500); }
         <label for="admin-password">Password</label>
         <input type="password" id="admin-password" autocomplete="current-password">
       </div>
+      <span class="auth-forgot" id="admin-go-forgot">Forgot password?</span>
       <button class="btn btn-primary btn-block" type="submit">Sign in</button>
     </form>
+  </div>
+
+  <!-- forgot password: request a code, no need to know the old password -->
+  <div class="auth-panel" style="position:static;box-shadow:var(--shadow-2);border:1px solid var(--n-200);display:none" id="admin-forgot-panel">
+    <div class="auth-head">
+      <h3>Reset your password</h3>
+      <p>We'll email you a 6-digit code</p>
+    </div>
+    <div class="auth-err" id="admin-forgot-err">Enter the email you signed up with.</div>
+    <form id="admin-forgot-form">
+      <div class="auth-field">
+        <label for="admin-forgot-email">Email</label>
+        <input type="email" id="admin-forgot-email" autocomplete="email">
+      </div>
+      <button class="btn btn-primary btn-block" type="submit">Send code</button>
+    </form>
+    <div class="auth-switch"><a id="admin-back-to-signin-1">Back to sign in</a></div>
+  </div>
+
+  <!-- enter the code AND the new password in one step -->
+  <div class="auth-panel" style="position:static;box-shadow:var(--shadow-2);border:1px solid var(--n-200);display:none" id="admin-verify-panel">
+    <div class="auth-head">
+      <h3>Set a new password</h3>
+      <p>Enter the code sent to <span id="admin-verify-email-label">your email</span></p>
+    </div>
+    <div class="auth-err" id="admin-verify-err">Enter the 6-digit code and a new password (min. 8 characters).</div>
+    <form id="admin-verify-form">
+      <div class="auth-field">
+        <label for="admin-verify-code">6-digit code</label>
+        <input type="text" id="admin-verify-code" inputmode="numeric" maxlength="6" autocomplete="one-time-code">
+      </div>
+      <div class="auth-field">
+        <label for="admin-verify-newpass">New password</label>
+        <input type="password" id="admin-verify-newpass" autocomplete="new-password">
+      </div>
+      <button class="btn btn-primary btn-block" type="submit">Set password &amp; sign in</button>
+    </form>
+    <div class="auth-switch"><a id="admin-resend-code">Resend code</a> · <a id="admin-back-to-signin-2">Back to sign in</a></div>
   </div>
 </div>
 
@@ -1587,6 +1626,86 @@ loginForm.addEventListener("submit", function (e) {
     });
 });
 
+// ---------- forgot password (no need to know the old one) ----------
+var signinPanel = document.getElementById("admin-signin-panel");
+var forgotPanel = document.getElementById("admin-forgot-panel");
+var verifyPanel = document.getElementById("admin-verify-panel");
+var lastForgotEmail = "";
+
+function showAdminAuthPanel(panel) {
+  [signinPanel, forgotPanel, verifyPanel].forEach(function (p) { p.style.display = "none"; });
+  panel.style.display = "block";
+}
+
+document.getElementById("admin-go-forgot").addEventListener("click", function () { showAdminAuthPanel(forgotPanel); });
+document.getElementById("admin-back-to-signin-1").addEventListener("click", function () { showAdminAuthPanel(signinPanel); });
+document.getElementById("admin-back-to-signin-2").addEventListener("click", function () { showAdminAuthPanel(signinPanel); });
+
+document.getElementById("admin-forgot-form").addEventListener("submit", function (e) {
+  e.preventDefault();
+  var email = document.getElementById("admin-forgot-email").value.trim();
+  var err = document.getElementById("admin-forgot-err");
+  err.classList.remove("show");
+  if (!email) { err.textContent = "Enter your email."; err.classList.add("show"); return; }
+
+  var btn = this.querySelector("button[type=submit]");
+  btn.disabled = true; btn.textContent = "Sending…";
+
+  fetch(API_BASE + "/api/auth/forgot", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: email })
+  })
+    .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
+    .then(function (r) {
+      btn.disabled = false; btn.textContent = "Send code";
+      if (!r.ok) { err.textContent = r.data.error || "Could not send code."; err.classList.add("show"); return; }
+      lastForgotEmail = email;
+      document.getElementById("admin-verify-email-label").textContent = email;
+      showAdminAuthPanel(verifyPanel);
+    })
+    .catch(function () {
+      btn.disabled = false; btn.textContent = "Send code";
+      err.textContent = "Couldn't reach the server."; err.classList.add("show");
+    });
+});
+
+document.getElementById("admin-resend-code").addEventListener("click", function () {
+  document.getElementById("admin-forgot-email").value = lastForgotEmail;
+  showAdminAuthPanel(forgotPanel);
+});
+
+document.getElementById("admin-verify-form").addEventListener("submit", function (e) {
+  e.preventDefault();
+  var code = document.getElementById("admin-verify-code").value.trim();
+  var newPassword = document.getElementById("admin-verify-newpass").value;
+  var err = document.getElementById("admin-verify-err");
+  err.classList.remove("show");
+  if (!/^\d{6}$/.test(code)) { err.textContent = "Enter the 6-digit code."; err.classList.add("show"); return; }
+  if (newPassword.length < 8) { err.textContent = "New password must be at least 8 characters."; err.classList.add("show"); return; }
+
+  var btn = this.querySelector("button[type=submit]");
+  btn.disabled = true; btn.textContent = "Setting password…";
+
+  fetch(API_BASE + "/api/auth/verify-code", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: lastForgotEmail, code: code, newPassword: newPassword })
+  })
+    .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
+    .then(function (r) {
+      btn.disabled = false; btn.textContent = "Set password & sign in";
+      if (!r.ok) { err.textContent = r.data.error || "That code didn't work."; err.classList.add("show"); return; }
+      if (r.data.user.role !== "admin") {
+        err.textContent = "This account doesn't have admin access."; err.classList.add("show"); return;
+      }
+      adminToken = r.data.token;
+      enterAdminApp(r.data.user);
+    })
+    .catch(function () {
+      btn.disabled = false; btn.textContent = "Set password & sign in";
+      err.textContent = "Couldn't reach the server."; err.classList.add("show");
+    });
+});
+
 document.getElementById("admin-logout").addEventListener("click", function () {
   // Clears the session cookie server-side too — without this, the cookie
   // would still be valid and a refresh would silently log back in.
@@ -1596,6 +1715,7 @@ document.getElementById("admin-logout").addEventListener("click", function () {
   document.getElementById("admin-logout-wrap").style.display = "none";
   loginScreen.style.display = "flex";
   loginForm.reset();
+  showAdminAuthPanel(signinPanel);
 });
 
 function authHeaders() {
