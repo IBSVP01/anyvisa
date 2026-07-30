@@ -1103,12 +1103,19 @@ footer a { color: var(--n-500); }
 }
 .qf-radio-group label:hover { border-color: var(--n-500); }
 .qf-radio-group label.checked { border-color: var(--brand); background: var(--brand-tint); color: var(--n-900); font-weight: 600; }
+/* The native <input> stays in the DOM (so screen readers and clicking still
+   work) but is visually invisible — no browser/OS theme can restyle a form
+   control we're not showing. The circle you actually see is .qf-radio-dot,
+   a plain span, which renders identically everywhere. */
 .qf-radio-group input[type="radio"] {
-  appearance: none; -webkit-appearance: none; width: 18px; height: 18px; flex-shrink: 0;
-  border: 1.5px solid var(--n-400); border-radius: 50%; margin: 0; cursor: pointer; position: relative;
+  position: absolute; opacity: 0; width: 18px; height: 18px; margin: 0; cursor: pointer;
 }
-.qf-radio-group input[type="radio"]:checked { border-color: var(--brand); }
-.qf-radio-group input[type="radio"]:checked::after {
+.qf-radio-dot {
+  width: 18px; height: 18px; flex-shrink: 0; border-radius: 50%; border: 1.5px solid var(--n-400);
+  background: var(--white); position: relative; box-sizing: border-box;
+}
+.qf-radio-group label.checked .qf-radio-dot { border-color: var(--brand); }
+.qf-radio-group label.checked .qf-radio-dot::after {
   content: ""; position: absolute; inset: 3px; border-radius: 50%; background: var(--brand);
 }
 
@@ -1808,10 +1815,6 @@ footer a { color: var(--n-500); }
       <div class="admin-table" style="padding:var(--s-6);max-width:480px;margin-top:var(--s-5)">
         <h3 style="font-size:var(--fs-base);margin-bottom:var(--s-4)">Change password</h3>
         <div class="auth-err" id="settings-password-err">Something went wrong.</div>
-        <div class="auth-field">
-          <label for="settings-current-password">Current password</label>
-          <input type="password" id="settings-current-password" autocomplete="current-password">
-        </div>
         <div class="auth-field">
           <label for="settings-new-password">New password</label>
           <input type="password" id="settings-new-password" autocomplete="new-password">
@@ -2981,11 +2984,12 @@ function renderQuestionnaireFields(fields, container) {
         }
         entries.forEach(function (entry, idx) {
           var card = document.createElement("div");
-          card.style.cssText = "border:1px solid var(--n-200);border-radius:8px;padding:12px;margin-bottom:8px;display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px";
+          card.style.cssText = "border:1px solid var(--n-200);border-radius:8px;padding:12px;margin-bottom:8px;display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;align-items:start";
           f.subfields.forEach(function (sf) {
             var sfWrap = document.createElement("div");
+            sfWrap.style.cssText = "display:flex;flex-direction:column";
             var sfLabel = document.createElement("label");
-            sfLabel.style.cssText = "display:block;font-size:11px;color:var(--n-500);margin-bottom:2px";
+            sfLabel.style.cssText = "display:block;min-height:28px;font-size:11px;line-height:1.3;color:var(--n-500);margin-bottom:2px";
             sfLabel.textContent = sf.label;
             sfWrap.appendChild(sfLabel);
             var sfInput;
@@ -3003,7 +3007,8 @@ function renderQuestionnaireFields(fields, container) {
               sfInput = document.createElement("input");
               sfInput.type = sf.type === "date" ? "date" : "text";
             }
-            sfInput.style.cssText = "width:100%;min-height:36px;padding:6px 8px;border:1px solid var(--n-300);border-radius:6px;font-family:var(--font);font-size:13px";
+            sfInput.style.cssText = "box-sizing:border-box;width:100%;height:36px;padding:6px 8px;border:1px solid var(--n-300);border-radius:6px;font-family:var(--font);font-size:13px;background:var(--white)";
+            if (sf.type === "textarea") sfInput.style.height = "auto";
             sfInput.value = entry[sf.key] || "";
             sfInput.addEventListener("input", function () { entry[sf.key] = sfInput.value; syncHidden(); });
             if (sf.type === "select") sfInput.addEventListener("change", function () { entry[sf.key] = sfInput.value; syncHidden(); });
@@ -3078,7 +3083,10 @@ function renderQuestionnaireFields(fields, container) {
         var optLabel = document.createElement("label");
         var radio = document.createElement("input");
         radio.type = "radio"; radio.name = "qf-" + f.key; radio.value = opt;
+        var dot = document.createElement("span");
+        dot.className = "qf-radio-dot";
         optLabel.appendChild(radio);
+        optLabel.appendChild(dot);
         optLabel.appendChild(document.createTextNode(opt));
         input.appendChild(optLabel);
       });
@@ -3497,7 +3505,6 @@ if (settingsSaveProfile) {
   });
 
   document.getElementById("settings-save-password").addEventListener("click", function () {
-    var currentPassword = document.getElementById("settings-current-password").value;
     var newPassword = document.getElementById("settings-new-password").value;
     var err = document.getElementById("settings-password-err");
     var status = document.getElementById("settings-password-status");
@@ -3505,13 +3512,12 @@ if (settingsSaveProfile) {
     fetch(API_BASE + "/api/auth/change-password", {
           credentials: "include",
       method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + authToken },
-      body: JSON.stringify({ currentPassword: currentPassword, newPassword: newPassword })
+      body: JSON.stringify({ newPassword: newPassword })
     })
       .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
       .then(function (r) {
         if (!r.ok) { err.textContent = r.data.error || "Could not update password."; err.classList.add("show"); return; }
         status.textContent = "Password updated.";
-        document.getElementById("settings-current-password").value = "";
         document.getElementById("settings-new-password").value = "";
       })
       .catch(function () { err.textContent = "Couldn't reach the server."; err.classList.add("show"); });
