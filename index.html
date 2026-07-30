@@ -1291,6 +1291,9 @@ footer a { color: var(--n-500); }
         <div class="row"><span class="lbl">Form Filling</span><span class="val free">Free</span></div>
         <hr>
         <div class="row total"><span class="lbl">Total Amount</span><span class="val" id="hp-total">£200</span></div>
+        <div id="hp-evisa-note" style="display:none;margin-top:10px;padding:10px 12px;background:var(--brand-tint);border-radius:8px;font-size:12.5px;color:var(--n-700);line-height:1.4">
+          This is an <b>e-visa</b> — fully online, no consulate appointment needed. Not every nationality is eligible; we confirm this for your passport before filing.
+        </div>
       </div>
     </div>
 
@@ -1325,7 +1328,6 @@ footer a { color: var(--n-500); }
         <h3>AI document check</h3>
         <p>Our AI reviews every file against embassy rules in minutes, flags issues, and an expert signs off before filing.</p>
         <span class="meta auto"><svg class="ic"><use href="#i-check"/></svg>Automated</span>
-        <p style="margin-top:var(--s-3)"><a href="ai-check.html" style="font-size:var(--fs-xs)">See how it works →</a></p>
       </li>
       <li class="step">
         <h3>We file and book for you</h3>
@@ -2180,6 +2182,9 @@ footer a { color: var(--n-500); }
           <p class="hint">Only destinations available for your citizenship are shown</p>
           <div style="max-width:380px;margin:0 auto">
             <select id="wiz-destination" style="width:100%;padding:14px 16px;font-size:16px;border:1px solid var(--n-300);border-radius:10px;font-family:var(--font)"></select>
+            <div id="wiz-evisa-note" style="display:none;margin-top:12px;padding:10px 14px;background:var(--brand-tint);border-radius:8px;font-size:12.5px;color:var(--n-700);line-height:1.4;text-align:left">
+              This is an <b>e-visa</b> — fully online, no consulate appointment needed. Not every nationality is eligible; we confirm this for your passport before filing.
+            </div>
           </div>
         </div>
       </div>
@@ -2457,6 +2462,8 @@ if (selPassport) {
     document.getElementById("hp-appt").textContent = "£" + fee + " × 1";
     document.getElementById("hp-service").textContent = "£" + svcFee + " × 1";
     document.getElementById("hp-total").textContent = "£" + (fee + svcFee);
+    var evisaNote = document.getElementById("hp-evisa-note");
+    if (evisaNote) evisaNote.style.display = (d && d.evisa) ? "block" : "none";
     heroPrice.classList.add("show");
     if (heroGrid) heroGrid.classList.add("price-visible");
   }
@@ -3877,6 +3884,13 @@ function populateWizDestination() {
   if (available.indexOf(wizState.destination) === -1) wizState.destination = null;
   sel.innerHTML = "<option value=''>Select…</option>" +
     available.map(function (n) { return "<option" + (n === wizState.destination ? " selected" : "") + ">" + n + "</option>"; }).join("");
+  updateWizEvisaNote();
+}
+function updateWizEvisaNote() {
+  var note = document.getElementById("wiz-evisa-note");
+  if (!note) return;
+  var d = DEST[wizState.destination];
+  note.style.display = (d && d.evisa) ? "block" : "none";
 }
 var wizCitSelect = document.getElementById("wiz-citizenship");
 if (wizCitSelect) {
@@ -3890,6 +3904,7 @@ if (wizDestSelect) {
   wizDestSelect.addEventListener("change", function () {
     wizState.destination = wizDestSelect.value;
     document.getElementById("wiz-country").textContent = (wizState.destination || "YOUR DESTINATION").toUpperCase();
+    updateWizEvisaNote();
   });
 }
 
