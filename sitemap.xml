@@ -1,19 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://ibsvp01.github.io/anyvisa/</loc>
+    <loc>https://anyvisa.uk/</loc>
     <lastmod>2026-07-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://ibsvp01.github.io/anyvisa/about.html</loc>
+    <loc>https://anyvisa.uk/about.html</loc>
     <lastmod>2026-07-29</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://ibsvp01.github.io/anyvisa/blog.html</loc>
+    <loc>https://anyvisa.uk/blog.html</loc>
     <lastmod>2026-07-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
@@ -23,19 +23,19 @@
        hand-edit them, they'll be overwritten on the next run. -->
   <!-- AUTO-GENERATED BLOG POSTS END -->
   <url>
-    <loc>https://ibsvp01.github.io/anyvisa/privacy.html</loc>
+    <loc>https://anyvisa.uk/privacy.html</loc>
     <lastmod>2026-07-29</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
-    <loc>https://ibsvp01.github.io/anyvisa/terms.html</loc>
+    <loc>https://anyvisa.uk/terms.html</loc>
     <lastmod>2026-07-29</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
-    <loc>https://ibsvp01.github.io/anyvisa/disclaimer.html</loc>
+    <loc>https://anyvisa.uk/disclaimer.html</loc>
     <lastmod>2026-07-29</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>

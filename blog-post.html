@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title id="post-title-tag">Loading… — AnyVisa Blog</title>
 <meta id="post-desc-tag" name="description" content="AnyVisa blog post.">
-<link id="post-canonical-tag" rel="canonical" href="https://ibsvp01.github.io/anyvisa/blog-post.html">
+<link id="post-canonical-tag" rel="canonical" href="https://anyvisa.uk/blog-post.html">
 
 <!-- favicon -->
 <link rel="icon" href="favicon.ico" sizes="any">
@@ -19,13 +19,13 @@
 <meta property="og:site_name" content="AnyVisa">
 <meta id="post-og-title" property="og:title" content="AnyVisa Blog">
 <meta id="post-og-desc" property="og:description" content="AnyVisa blog post.">
-<meta id="post-og-url" property="og:url" content="https://ibsvp01.github.io/anyvisa/blog-post.html">
-<meta property="og:image" content="https://ibsvp01.github.io/anyvisa/og-image.png">
+<meta id="post-og-url" property="og:url" content="https://anyvisa.uk/blog-post.html">
+<meta property="og:image" content="https://anyvisa.uk/og-image.png">
 <meta property="og:locale" content="en_GB">
 <meta name="twitter:card" content="summary_large_image">
 <meta id="post-twitter-title" name="twitter:title" content="AnyVisa Blog">
 <meta id="post-twitter-desc" name="twitter:description" content="AnyVisa blog post.">
-<meta name="twitter:image" content="https://ibsvp01.github.io/anyvisa/og-image.png">
+<meta name="twitter:image" content="https://anyvisa.uk/og-image.png">
 <style>/* ============================================================
    AnyVisa v5 — systematic UI
    Zero external dependencies. System font stack.
@@ -1238,7 +1238,7 @@ footer a { color: var(--n-500); }
 var API_BASE = "https://dedicate-tusk-storewide.ngrok-free.dev";
 var slug = new URLSearchParams(location.search).get("slug");
 var article = document.getElementById("post-article");
-var postUrl = "https://ibsvp01.github.io/anyvisa/blog-post.html?slug=" + encodeURIComponent(slug || "");
+var postUrl = "https://anyvisa.uk/blog-post.html?slug=" + encodeURIComponent(slug || "");
 
 if (!slug) {
   article.innerHTML = "<p class='note'>No post specified.</p>";
@@ -1285,10 +1285,10 @@ if (!slug) {
         "publisher": {
           "@type": "Organization",
           "name": "AnyVisa",
-          "logo": { "@type": "ImageObject", "url": "https://ibsvp01.github.io/anyvisa/logo.png" }
+          "logo": { "@type": "ImageObject", "url": "https://anyvisa.uk/logo.png" }
         },
         "mainEntityOfPage": { "@type": "WebPage", "@id": postUrl },
-        "image": "https://ibsvp01.github.io/anyvisa/og-image.png"
+        "image": "https://anyvisa.uk/og-image.png"
       });
       document.head.appendChild(ld);
     })
