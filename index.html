@@ -1094,8 +1094,23 @@ footer a { color: var(--n-500); }
   margin: var(--s-5) 0 var(--s-1); padding-top: var(--s-3); border-top: 1px solid var(--n-200);
 }
 .qf-section-title:first-child { margin-top: 0; padding-top: 0; border-top: none; }
-.qf-radio-group { display: flex; gap: var(--s-4); align-items: center; min-height: 48px; }
-.qf-radio-group label { display: flex; align-items: center; gap: 6px; font-size: var(--fs-sm); cursor: pointer; font-weight: 400; }
+.qf-radio-group { display: flex; gap: var(--s-3); flex-wrap: wrap; }
+.qf-radio-group label {
+  display: flex; align-items: center; gap: var(--s-2); font-size: var(--fs-sm); font-weight: 500;
+  cursor: pointer; padding: 10px 16px; border: 1.5px solid var(--n-300); border-radius: var(--r-sm);
+  background: var(--white); color: var(--n-700); transition: border-color 0.15s, background 0.15s;
+  min-height: 44px; flex: 1 1 auto; max-width: 320px;
+}
+.qf-radio-group label:hover { border-color: var(--n-500); }
+.qf-radio-group label.checked { border-color: var(--brand); background: var(--brand-tint); color: var(--n-900); font-weight: 600; }
+.qf-radio-group input[type="radio"] {
+  appearance: none; -webkit-appearance: none; width: 18px; height: 18px; flex-shrink: 0;
+  border: 1.5px solid var(--n-400); border-radius: 50%; margin: 0; cursor: pointer; position: relative;
+}
+.qf-radio-group input[type="radio"]:checked { border-color: var(--brand); }
+.qf-radio-group input[type="radio"]:checked::after {
+  content: ""; position: absolute; inset: 3px; border-radius: 50%; background: var(--brand);
+}
 
 .auth-field input, .auth-field select {
   width: 100%; min-height: 48px; padding: 0 var(--s-4); font-size: var(--fs-base); font-family: var(--font);
@@ -3064,7 +3079,7 @@ function renderQuestionnaireFields(fields, container) {
         var radio = document.createElement("input");
         radio.type = "radio"; radio.name = "qf-" + f.key; radio.value = opt;
         optLabel.appendChild(radio);
-        optLabel.appendChild(document.createTextNode(" " + opt));
+        optLabel.appendChild(document.createTextNode(opt));
         input.appendChild(optLabel);
       });
     } else {
@@ -3076,10 +3091,14 @@ function renderQuestionnaireFields(fields, container) {
 
     if (f.type === "radio") {
       var radios = input.querySelectorAll("input[type=radio]");
+      function syncChecked() {
+        radios.forEach(function (r) { r.closest("label").classList.toggle("checked", r.checked); });
+      }
       radios.forEach(function (r) {
         if (r.value === f.value) r.checked = true;
-        r.addEventListener("change", function () { liveValues[f.key] = r.value; refreshVisibility(); });
+        r.addEventListener("change", function () { liveValues[f.key] = r.value; syncChecked(); refreshVisibility(); });
       });
+      syncChecked();
     } else {
       input.value = f.value || "";
       input.addEventListener("input", function () { liveValues[f.key] = input.value; refreshVisibility(); });
