@@ -1174,6 +1174,7 @@ footer a { color: var(--n-500); }
         <li><button data-tab="applications">Applications</button></li>
         <li><button data-tab="customers">Customers</button></li>
         <li><button data-tab="crm">Client DB</button></li>
+        <li><button data-tab="questionnaires">Questionnaires</button></li>
         <li><button data-tab="queue">AI review queue</button></li>
         <li><button data-tab="blog">Blog</button></li>
         <li><button data-tab="arch">System &amp; data</button></li>
@@ -1220,6 +1221,58 @@ footer a { color: var(--n-500); }
           </div>
         </div>
         <div id="applications-list"><p class="note">Loading…</p></div>
+      </div>
+
+      <!-- questionnaire templates -->
+      <div class="admin-tab" data-tab="questionnaires" style="display:none">
+        <div class="dash-head">
+          <div>
+            <h1 style="font-size:var(--fs-xl)">Questionnaires</h1>
+            <p>Edit or remove questions per destination template. Changes apply immediately to every client's dashboard — a removed question disappears from any in-progress application using that template.</p>
+          </div>
+        </div>
+
+        <table class="admin-table" style="margin-bottom:var(--s-5)">
+          <thead><tr><th>Template</th><th>Questions</th><th>Used by</th><th></th></tr></thead>
+          <tbody id="qtemplates-tbody"><tr><td colspan="4">Loading…</td></tr></tbody>
+        </table>
+
+        <div id="qfields-panel" style="display:none">
+          <h3 style="font-size:var(--fs-base);margin-bottom:var(--s-3)">Editing: <span id="qfields-template-name"></span></h3>
+
+          <div id="qfields-list"></div>
+
+          <div class="admin-table" style="padding:var(--s-4);margin-top:var(--s-4)">
+            <h4 style="font-size:var(--fs-sm);font-weight:700;margin-bottom:var(--s-3)">Add a question</h4>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:var(--s-3)">
+              <div class="auth-field" style="margin:0"><label>Section</label><input type="text" id="qf-new-section" placeholder="e.g. Personal details"></div>
+              <div class="auth-field" style="margin:0"><label>Field key</label><input type="text" id="qf-new-key" placeholder="e.g. middle_name"></div>
+              <div class="auth-field" style="margin:0"><label>Type</label>
+                <select id="qf-new-type">
+                  <option value="text">text</option><option value="textarea">textarea</option><option value="date">date</option>
+                  <option value="radio">radio</option><option value="select">select</option><option value="checkbox">checkbox</option>
+                  <option value="info">info (static notice, no answer)</option>
+                </select>
+              </div>
+              <div class="auth-field" style="margin:0"><label>Options (| separated)</label><input type="text" id="qf-new-options" placeholder="Yes|No"></div>
+            </div>
+            <div class="auth-field" id="qf-new-subfields-wrap" style="margin:var(--s-3) 0 0;display:none">
+              <label>Repeater sub-fields — one per line: <code>key|Label|type|option1,option2</code> (type is text/textarea/date/select; options only needed for select)</label>
+              <textarea id="qf-new-subfields" rows="4" style="width:100%;padding:10px 16px;border:1px solid var(--n-300);border-radius:8px;font-family:monospace;font-size:12px" placeholder="nationality|Nationality|select|France,Spain,Italy&#10;year|Year of acquisition|text&#10;passport_number|Passport number|text"></textarea>
+            </div>
+            <div class="auth-field" style="margin:var(--s-3) 0 0"><label>Question label</label><input type="text" id="qf-new-label" placeholder="e.g. Middle name"></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--s-3);margin-top:var(--s-3)">
+              <div class="auth-field" style="margin:0"><label>Only show if question (field key)…</label><input type="text" id="qf-new-depends-key" placeholder="e.g. has_other_citizenship"></div>
+              <div class="auth-field" style="margin:0"><label>…equals</label><input type="text" id="qf-new-depends-value" placeholder="e.g. Yes"></div>
+            </div>
+            <p class="note" style="margin-top:4px">Leave both blank to always show this question. Use this for "if yes, give details" follow-ups.</p>
+            <div style="display:flex;gap:var(--s-3);align-items:center;margin-top:var(--s-3)">
+              <label style="display:flex;align-items:center;gap:6px;font-size:var(--fs-sm)"><input type="checkbox" id="qf-new-required"> Required</label>
+              <button class="btn btn-primary" id="qf-add-btn" type="button" style="min-height:36px">Add question</button>
+              <span id="qf-add-status" style="font-size:var(--fs-xs);color:var(--err)"></span>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- customers / CRM -->
@@ -1567,6 +1620,7 @@ adminNavBtns.forEach(function (btn) {
     if (btn.dataset.tab === "blog") loadBlogPosts();
     if (btn.dataset.tab === "customers") { loadCustomers(); loadTasksDue(); }
     if (btn.dataset.tab === "crm") { loadCrmFilters(); loadCrmClients(); }
+    if (btn.dataset.tab === "questionnaires") loadQTemplates();
   });
 });
 
@@ -2454,6 +2508,146 @@ document.getElementById("crm-bulk-delete-btn").addEventListener("click", functio
     loadCrmFilters();
     loadCrmClients();
   }).catch(function () { alert("Couldn't reach the server."); });
+});
+
+// ---------- questionnaire templates ----------
+var qCurrentTemplate = null;
+
+function loadQTemplates() {
+  var tbody = document.getElementById("qtemplates-tbody");
+  tbody.innerHTML = "<tr><td colspan='4'>Loading…</td></tr>";
+  fetch(API_BASE + "/api/admin/questionnaire-templates", { headers: authHeaders() })
+    .then(function (res) { return res.json(); })
+    .then(function (templates) {
+      if (!templates.length) { tbody.innerHTML = "<tr><td colspan='4'>No templates yet.</td></tr>"; return; }
+      tbody.innerHTML = "";
+      templates.forEach(function (t) {
+        var tr = document.createElement("tr");
+        tr.innerHTML =
+          "<td><b>" + esc(t.templateId) + "</b></td>" +
+          "<td>" + t.fieldCount + "</td>" +
+          "<td style='max-width:320px'>" + esc(t.countries.join(", ") || "—") + "</td>" +
+          "<td><button class='btn btn-secondary qt-edit-btn' type='button' style='min-height:30px;padding:0 12px;font-size:var(--fs-xs)'>Edit questions</button></td>";
+        tr.querySelector(".qt-edit-btn").addEventListener("click", function () { openQFields(t.templateId); });
+        tbody.appendChild(tr);
+      });
+    })
+    .catch(function () { tbody.innerHTML = "<tr><td colspan='4'>Couldn't load templates.</td></tr>"; });
+}
+
+function openQFields(templateId) {
+  qCurrentTemplate = templateId;
+  document.getElementById("qfields-template-name").textContent = templateId;
+  document.getElementById("qfields-panel").style.display = "block";
+  document.getElementById("qfields-panel").scrollIntoView({ behavior: "smooth", block: "nearest" });
+  loadQFields();
+}
+
+function loadQFields() {
+  var list = document.getElementById("qfields-list");
+  list.innerHTML = "<p class='note'>Loading…</p>";
+  fetch(API_BASE + "/api/admin/questionnaire-templates/" + encodeURIComponent(qCurrentTemplate) + "/fields", { headers: authHeaders() })
+    .then(function (res) { return res.json(); })
+    .then(function (fields) {
+      if (!fields.length) { list.innerHTML = "<p class='note'>No questions in this template yet.</p>"; return; }
+      list.innerHTML = "";
+      fields.forEach(function (f) { list.appendChild(renderQField(f)); });
+    })
+    .catch(function () { list.innerHTML = "<p class='note'>Couldn't load questions.</p>"; });
+}
+
+function renderQField(f) {
+  var row = document.createElement("div");
+  row.className = "doc-req-row";
+  row.style.gridTemplateColumns = "1fr 1fr 1fr auto";
+  row.innerHTML =
+    "<div><label>Section</label><input type='text' class='qf-section' value=\"" + esc(f.section) + "\"></div>" +
+    "<div><label>Label</label><input type='text' class='qf-label' value=\"" + esc(f.label) + "\"></div>" +
+    "<div><label>Options (| separated)</label><input type='text' class='qf-options' value=\"" + esc(f.options.join("|")) + "\" " + (["radio", "select"].includes(f.fieldType) ? "" : "disabled") + "></div>" +
+    "<div style='display:flex;flex-direction:column;gap:6px;align-items:flex-start'>" +
+      "<span class='note' style='font-size:11px'>" + f.fieldKey + " · " + f.fieldType + (f.dependsOnKey ? " · shows only if " + f.dependsOnKey + " = " + f.dependsOnValue : "") + "</span>" +
+      "<label style='display:flex;align-items:center;gap:4px;font-size:11px'><input type='checkbox' class='qf-required'" + (f.required ? " checked" : "") + "> required</label>" +
+      "<div style='display:flex;gap:6px'>" +
+        "<button class='btn btn-primary qf-save-btn' type='button' style='min-height:26px;padding:0 8px;font-size:11px'>Save</button>" +
+        "<button class='btn btn-secondary qf-delete-btn' type='button' style='min-height:26px;padding:0 8px;font-size:11px;color:var(--err)'>Delete</button>" +
+      "</div>" +
+    "</div>";
+
+  row.querySelector(".qf-save-btn").addEventListener("click", function () {
+    var body = {
+      section: row.querySelector(".qf-section").value,
+      label: row.querySelector(".qf-label").value,
+      options: row.querySelector(".qf-options").value.split("|").filter(Boolean),
+      required: row.querySelector(".qf-required").checked
+    };
+    fetch(API_BASE + "/api/admin/questionnaire-fields/" + f.id, { method: "PUT", headers: authHeaders(), body: JSON.stringify(body) })
+      .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
+      .then(function (r) { if (!r.ok) alert(r.data.error || "Could not save."); })
+      .catch(function () { alert("Couldn't reach the server."); });
+  });
+
+  row.querySelector(".qf-delete-btn").addEventListener("click", function () {
+    if (!confirm('Delete "' + f.label + '"? This removes it from every client\'s dashboard using this template, and clears any answers already given.')) return;
+    fetch(API_BASE + "/api/admin/questionnaire-fields/" + f.id, { method: "DELETE", headers: authHeaders() })
+      .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
+      .then(function (r) { if (!r.ok) { alert(r.data.error || "Could not delete."); return; } loadQFields(); loadQTemplates(); })
+      .catch(function () { alert("Couldn't reach the server."); });
+  });
+
+  return row;
+}
+
+document.getElementById("qf-new-type").addEventListener("change", function () {
+  document.getElementById("qf-new-subfields-wrap").style.display = this.value === "repeater" ? "block" : "none";
+});
+
+function parseSubfieldsShorthand(text) {
+  return text.split("\n").map(function (line) { return line.trim(); }).filter(Boolean).map(function (line) {
+    var parts = line.split("|");
+    return {
+      key: (parts[0] || "").trim(),
+      label: (parts[1] || "").trim(),
+      type: (parts[2] || "text").trim(),
+      options: parts[3] ? parts[3].split(",").map(function (o) { return o.trim(); }).filter(Boolean) : []
+    };
+  }).filter(function (sf) { return sf.key && sf.label; });
+}
+
+document.getElementById("qf-add-btn").addEventListener("click", function () {
+  var status = document.getElementById("qf-add-status");
+  var body = {
+    section: document.getElementById("qf-new-section").value,
+    fieldKey: document.getElementById("qf-new-key").value.trim(),
+    label: document.getElementById("qf-new-label").value,
+    fieldType: document.getElementById("qf-new-type").value,
+    options: document.getElementById("qf-new-options").value.split("|").filter(Boolean),
+    required: document.getElementById("qf-new-required").checked,
+    dependsOnKey: document.getElementById("qf-new-depends-key").value.trim(),
+    dependsOnValue: document.getElementById("qf-new-depends-value").value.trim(),
+    subfields: parseSubfieldsShorthand(document.getElementById("qf-new-subfields").value)
+  };
+  if (!body.fieldKey || !body.label) { status.textContent = "Field key and label are required."; return; }
+  if (body.fieldType === "repeater" && !body.subfields.length) { status.textContent = "Add at least one sub-field for a repeater question."; return; }
+  status.textContent = "Adding…";
+
+  fetch(API_BASE + "/api/admin/questionnaire-templates/" + encodeURIComponent(qCurrentTemplate) + "/fields", {
+    method: "POST", headers: authHeaders(), body: JSON.stringify(body)
+  })
+    .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
+    .then(function (r) {
+      if (!r.ok) { status.textContent = r.data.error || "Could not add."; return; }
+      status.textContent = "";
+      document.getElementById("qf-new-section").value = "";
+      document.getElementById("qf-new-key").value = "";
+      document.getElementById("qf-new-label").value = "";
+      document.getElementById("qf-new-options").value = "";
+      document.getElementById("qf-new-required").checked = false;
+      document.getElementById("qf-new-depends-key").value = "";
+      document.getElementById("qf-new-depends-value").value = "";
+      document.getElementById("qf-new-subfields").value = "";
+      loadQFields(); loadQTemplates();
+    })
+    .catch(function () { status.textContent = "Couldn't reach the server."; });
 });
 
 </script>

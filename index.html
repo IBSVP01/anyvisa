@@ -2880,13 +2880,33 @@ function openDocumentChecklist(application) {
 }
 
 // Renders whatever fields the destination's real questionnaire needs —
-// grouped by section, one input type per field (text/textarea/date/radio/select).
+// grouped by section, one input type per field (text/textarea/date/radio/select),
+// plus "info" (a static notice, no input) and conditional fields that only
+// show once their parent question has the matching answer (e.g. a "give
+// details" field that appears only after answering "Yes" to a yes/no question).
 function renderQuestionnaireFields(fields, container) {
   container.innerHTML = "";
   var grid = document.createElement("div");
   grid.style.display = "grid";
   grid.style.gridTemplateColumns = "1fr 1fr";
   grid.style.gap = "var(--s-3)";
+
+  // Tracks the live value of every field so conditional fields can react
+  // as the person fills in the form, not just on initial render.
+  var liveValues = {};
+  fields.forEach(function (f) { liveValues[f.key] = f.value || ""; });
+
+  function isVisible(f) {
+    if (!f.dependsOnKey) return true;
+    return liveValues[f.dependsOnKey] === f.dependsOnValue;
+  }
+
+  function refreshVisibility() {
+    fields.forEach(function (f) {
+      var wrap = document.getElementById("qf-wrap-" + f.key);
+      if (wrap) wrap.style.display = isVisible(f) ? "" : "none";
+    });
+  }
 
   var lastSection = null;
   fields.forEach(function (f) {
@@ -2898,7 +2918,119 @@ function renderQuestionnaireFields(fields, container) {
       grid.appendChild(heading);
     }
 
+    if (f.type === "info") {
+      var noticeWrap = document.createElement("div");
+      noticeWrap.id = "qf-wrap-" + f.key;
+      noticeWrap.style.gridColumn = "1/-1";
+      noticeWrap.innerHTML = "<div class='ai-note' style='margin:0'><svg class=\"ic sm\"><use href=\"#i-shield\"/></svg><span>" + f.label + "</span></div>";
+      grid.appendChild(noticeWrap);
+      return;
+    }
+
+    if (f.type === "repeater") {
+      var repWrap = document.createElement("div");
+      repWrap.id = "qf-wrap-" + f.key;
+      repWrap.style.gridColumn = "1/-1";
+      repWrap.style.marginBottom = "var(--s-2)";
+
+      var repLabel = document.createElement("div");
+      repLabel.style.fontWeight = "600"; repLabel.style.fontSize = "var(--fs-sm)"; repLabel.style.marginBottom = "6px";
+      repLabel.textContent = f.label + (f.required ? "" : " (optional)");
+      repWrap.appendChild(repLabel);
+
+      var entriesContainer = document.createElement("div");
+      repWrap.appendChild(entriesContainer);
+
+      // Collected the same way every other answer is — a hidden input
+      // whose value is the JSON-serialized array of entries, picked up by
+      // collectQuestionnaireAnswers() like any other field.
+      var hiddenInput = document.createElement("input");
+      hiddenInput.type = "hidden";
+      hiddenInput.dataset.key = f.key;
+      repWrap.appendChild(hiddenInput);
+
+      var entries = [];
+      try { entries = f.value ? JSON.parse(f.value) : []; } catch (e) { entries = []; }
+      if (!Array.isArray(entries)) entries = [];
+
+      function syncHidden() { hiddenInput.value = JSON.stringify(entries); }
+      syncHidden();
+
+      function renderEntries() {
+        entriesContainer.innerHTML = "";
+        if (!entries.length) {
+          var empty = document.createElement("p");
+          empty.className = "note"; empty.style.margin = "0 0 8px";
+          empty.textContent = "None added yet.";
+          entriesContainer.appendChild(empty);
+        }
+        entries.forEach(function (entry, idx) {
+          var card = document.createElement("div");
+          card.style.cssText = "border:1px solid var(--n-200);border-radius:8px;padding:12px;margin-bottom:8px;display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px";
+          f.subfields.forEach(function (sf) {
+            var sfWrap = document.createElement("div");
+            var sfLabel = document.createElement("label");
+            sfLabel.style.cssText = "display:block;font-size:11px;color:var(--n-500);margin-bottom:2px";
+            sfLabel.textContent = sf.label;
+            sfWrap.appendChild(sfLabel);
+            var sfInput;
+            if (sf.type === "select") {
+              sfInput = document.createElement("select");
+              var sfBlank = document.createElement("option");
+              sfBlank.value = ""; sfBlank.textContent = "Select…";
+              sfInput.appendChild(sfBlank);
+              (sf.options || []).forEach(function (o) {
+                var op = document.createElement("option"); op.value = o; op.textContent = o; sfInput.appendChild(op);
+              });
+            } else if (sf.type === "textarea") {
+              sfInput = document.createElement("textarea"); sfInput.rows = 2;
+            } else {
+              sfInput = document.createElement("input");
+              sfInput.type = sf.type === "date" ? "date" : "text";
+            }
+            sfInput.style.cssText = "width:100%;min-height:36px;padding:6px 8px;border:1px solid var(--n-300);border-radius:6px;font-family:var(--font);font-size:13px";
+            sfInput.value = entry[sf.key] || "";
+            sfInput.addEventListener("input", function () { entry[sf.key] = sfInput.value; syncHidden(); });
+            if (sf.type === "select") sfInput.addEventListener("change", function () { entry[sf.key] = sfInput.value; syncHidden(); });
+            sfWrap.appendChild(sfInput);
+            card.appendChild(sfWrap);
+          });
+          var removeBtn = document.createElement("button");
+          removeBtn.type = "button";
+          removeBtn.className = "btn btn-secondary";
+          removeBtn.textContent = "Remove";
+          removeBtn.style.cssText = "grid-column:1/-1;justify-self:start;min-height:28px;padding:0 10px;font-size:11px;color:var(--err)";
+          removeBtn.addEventListener("click", function () {
+            entries.splice(idx, 1);
+            syncHidden();
+            renderEntries();
+          });
+          card.appendChild(removeBtn);
+          entriesContainer.appendChild(card);
+        });
+      }
+      renderEntries();
+
+      var addBtn = document.createElement("button");
+      addBtn.type = "button";
+      addBtn.className = "btn btn-secondary";
+      addBtn.textContent = "+ Add";
+      addBtn.style.cssText = "min-height:32px;padding:0 14px;font-size:12px";
+      addBtn.addEventListener("click", function () {
+        var blank = {};
+        f.subfields.forEach(function (sf) { blank[sf.key] = ""; });
+        entries.push(blank);
+        syncHidden();
+        renderEntries();
+      });
+      repWrap.appendChild(addBtn);
+
+      grid.appendChild(repWrap);
+      return;
+    }
+
     var wrap = document.createElement("div");
+    wrap.id = "qf-wrap-" + f.key;
     wrap.className = "auth-field";
     wrap.style.margin = "0";
     if (f.type === "textarea" || f.type === "radio") wrap.style.gridColumn = "1/-1";
@@ -2944,20 +3076,26 @@ function renderQuestionnaireFields(fields, container) {
 
     if (f.type === "radio") {
       var radios = input.querySelectorAll("input[type=radio]");
-      radios.forEach(function (r) { if (r.value === f.value) r.checked = true; });
+      radios.forEach(function (r) {
+        if (r.value === f.value) r.checked = true;
+        r.addEventListener("change", function () { liveValues[f.key] = r.value; refreshVisibility(); });
+      });
     } else {
       input.value = f.value || "";
+      input.addEventListener("input", function () { liveValues[f.key] = input.value; refreshVisibility(); });
+      if (f.type === "select") input.addEventListener("change", function () { liveValues[f.key] = input.value; refreshVisibility(); });
     }
 
     wrap.appendChild(input);
     grid.appendChild(wrap);
   });
   container.appendChild(grid);
+  refreshVisibility();
 }
 
 function collectQuestionnaireAnswers(container) {
   var answers = {};
-  container.querySelectorAll("input[type=text], input[type=date], input[type=tel], textarea, select").forEach(function (el) {
+  container.querySelectorAll("input[type=text], input[type=date], input[type=tel], input[type=hidden], textarea, select").forEach(function (el) {
     if (el.dataset.key) answers[el.dataset.key] = el.value;
   });
   var radioGroups = {};
