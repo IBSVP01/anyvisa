@@ -2111,7 +2111,9 @@ function renderAppAdminCard(app) {
   var qClass = app.questionnaireComplete ? "complete" : "incomplete";
   var qLabel = app.questionnaireComplete ? "Form complete" : "Form incomplete";
   var bClass = app.bookingStatus === "booked" ? "booked" : "not_booked";
-  var bLabel = app.bookingStatus === "booked" ? "Booked" : "Not booked";
+  var bLabel = app.isEvisa
+    ? (app.bookingStatus === "booked" ? "Decision made" : "Pending")
+    : (app.bookingStatus === "booked" ? "Booked" : "Not booked");
 
   card.innerHTML =
     "<div class='app-admin-head'>" +
@@ -2154,39 +2156,51 @@ function renderAppAdminBody(app, body) {
       qHtml = "<div class='q-grid'>" + (qHtml || "<p class='note'>No questions configured for this destination yet.</p>") + "</div>";
 
       var apptValue = app.appointmentAt ? app.appointmentAt.slice(0, 16) : "";
+      var isEvisa = !!app.isEvisa;
 
       body.innerHTML =
         "<h4 style='font-size:var(--fs-sm);font-weight:700;margin-bottom:var(--s-3);color:var(--n-700)'>Visa application form</h4>" +
         qHtml +
-        "<h4 style='font-size:var(--fs-sm);font-weight:700;margin-bottom:var(--s-3);color:var(--n-700)'>Booking</h4>" +
+        "<h4 style='font-size:var(--fs-sm);font-weight:700;margin-bottom:var(--s-3);color:var(--n-700)'>" + (isEvisa ? "Visa decision" : "Booking") + "</h4>" +
         "<p class='note' style='margin:0 0 var(--s-3)'>" +
         "Payment: " + (app.paid ? "<b style='color:var(--ok)'>Paid" + (app.paidAt ? " (" + app.paidAt + ")" : "") + "</b>" : "<b style='color:var(--err)'>Not paid yet</b>") +
         (app.preferredSubmissionDate ? " · Customer requested submission around: <b>" + app.preferredSubmissionDate + "</b>" : "") +
         "</p>" +
+        (isEvisa
+          ? "<p class='note' style='margin:0 0 var(--s-3);background:var(--brand-tint);padding:8px 12px;border-radius:6px'>E-visa — there's no consulate appointment to book. Set this to <b>Decision made</b> once the government has issued (or refused) the visa, and we'll email the customer to check their inbox. We never state the outcome here — the visa or refusal reaches them directly by email.</p>"
+          : "") +
         "<div style='display:flex;gap:var(--s-3);flex-wrap:wrap;align-items:flex-end'>" +
         "<div class='auth-field' style='margin:0'><label>Status</label>" +
-        "<select class='booking-status'><option value='not_booked'" + (app.bookingStatus !== "booked" ? " selected" : "") + ">Not booked</option>" +
-        "<option value='booked'" + (app.bookingStatus === "booked" ? " selected" : "") + ">Booked</option></select></div>" +
-        "<div class='auth-field' style='margin:0'><label>Appointment date &amp; time</label>" +
-        "<input type='datetime-local' class='booking-appt' value='" + apptValue + "'></div>" +
+        "<select class='booking-status'><option value='not_booked'" + (app.bookingStatus !== "booked" ? " selected" : "") + ">" + (isEvisa ? "Pending" : "Not booked") + "</option>" +
+        "<option value='booked'" + (app.bookingStatus === "booked" ? " selected" : "") + ">" + (isEvisa ? "Decision made" : "Booked") + "</option></select></div>" +
+        (isEvisa
+          ? "<div class='auth-field' style='margin:0'><label>Decision date (optional)</label><input type='date' class='booking-appt-date'></div>"
+          : "<div class='auth-field' style='margin:0'><label>Appointment date &amp; time</label><input type='datetime-local' class='booking-appt' value='" + apptValue + "'></div>") +
         "<button class='btn btn-primary save-booking' type='button' style='min-height:44px'>Save</button>" +
         "<span class='booking-save-status' style='font-size:var(--fs-xs);color:var(--ok)'></span>" +
         "</div>" +
         "<div class='auth-field' style='margin-top:var(--s-3)'><label>Internal notes (not shown to customer)</label>" +
-        "<input type='text' class='booking-notes' value='" + (app.bookingNotes || "").replace(/"/g, "&quot;") + "' placeholder='e.g. Booked via TLS portal, ref #12345'></div>" +
+        "<input type='text' class='booking-notes' value='" + (app.bookingNotes || "").replace(/"/g, "&quot;") + "' placeholder='" + (isEvisa ? "e.g. Approved, visa emailed to client 03/08" : "e.g. Booked via TLS portal, ref #12345") + "'></div>" +
         "<h4 style='font-size:var(--fs-sm);font-weight:700;margin:var(--s-5) 0 var(--s-3);color:var(--n-700)'>Documents</h4>" +
         "<div class='admin-docs-list'><p class='note'>Loading…</p></div>";
 
       body.querySelector(".save-booking").addEventListener("click", function () {
         var status = body.querySelector(".booking-save-status");
         status.textContent = "Saving…";
-        var apptRaw = body.querySelector(".booking-appt").value;
+        var appointmentAt = null;
+        if (isEvisa) {
+          var dateOnly = body.querySelector(".booking-appt-date").value;
+          appointmentAt = dateOnly ? dateOnly + "T00:00:00" : null;
+        } else {
+          var apptRaw = body.querySelector(".booking-appt").value;
+          appointmentAt = apptRaw ? apptRaw + ":00" : null;
+        }
         fetch(API_BASE + "/api/admin/applications/" + app.id + "/booking", {
           method: "PUT", headers: authHeaders(),
           body: JSON.stringify({
             bookingStatus: body.querySelector(".booking-status").value,
             bookingNotes: body.querySelector(".booking-notes").value,
-            appointmentAt: apptRaw ? apptRaw + ":00" : null
+            appointmentAt: appointmentAt
           })
         })
           .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
@@ -2197,7 +2211,7 @@ function renderAppAdminBody(app, body) {
             var badge = card.querySelector(".book-badge");
             var isBooked = body.querySelector(".booking-status").value === "booked";
             badge.className = "book-badge " + (isBooked ? "booked" : "not_booked");
-            badge.textContent = isBooked ? "Booked" : "Not booked";
+            badge.textContent = isBooked ? (isEvisa ? "Decision made" : "Booked") : (isEvisa ? "Pending" : "Not booked");
           })
           .catch(function () { status.textContent = "Couldn't reach the server."; status.style.color = "var(--err)"; });
       });
