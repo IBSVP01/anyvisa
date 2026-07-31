@@ -1741,6 +1741,7 @@ footer a { color: var(--n-500); }
               <span id="quest-save-status" style="font-size:var(--fs-xs);color:var(--ok)"></span>
             </div>
             <p class="note" style="margin:0 0 var(--s-4)">This is what we file with the consulate — please make sure it matches your passport exactly.</p>
+            <div id="quest-missing-notice" style="display:none;background:#fdf3e0;border:1px solid #f0dfa0;border-radius:8px;padding:12px 16px;margin-bottom:var(--s-4);font-size:var(--fs-xs);color:#8a6d1a"></div>
             <div id="quest-fields-container"><p class="note">Loading…</p></div>
             <button class="btn btn-primary" id="save-questionnaire" type="button" style="margin-top:var(--s-4);min-height:40px;padding:0 16px">Save application form</button>
             <button class="btn btn-secondary" id="continue-to-documents" type="button" style="margin-top:var(--s-4);margin-left:var(--s-3);min-height:40px;padding:0 16px">Continue to documents →</button>
@@ -2910,6 +2911,7 @@ function openDocumentChecklist(application) {
     .then(function (q) {
       renderQuestionnaireFields(q.fields, qContainer);
       updateQuestCompleteBadge(q.complete);
+      showMissingFieldsNotice(q.fields);
     });
 
   var checklist = document.getElementById("doc-checklist");
@@ -3175,6 +3177,30 @@ function updateQuestCompleteBadge(complete) {
   badge.style.color = complete ? "var(--ok)" : "var(--warn)";
 }
 
+// Mirrors the server's own completeness check (applications-routes.js
+// buildQuestionnaireResponse) so the list shown here can never disagree
+// with what actually blocks payment — a hidden conditional field never
+// counts as missing, a repeater counts as answered once it has 1+ entry.
+function showMissingFieldsNotice(fields) {
+  var notice = document.getElementById("quest-missing-notice");
+  var answers = {};
+  fields.forEach(function (f) { answers[f.key] = f.value; });
+
+  var missing = fields.filter(function (f) {
+    if (f.type === "info" || !f.required) return false;
+    if (f.dependsOnKey && answers[f.dependsOnKey] !== f.dependsOnValue) return false; // hidden, doesn't count
+    if (f.type === "repeater") {
+      try { return JSON.parse(f.value || "[]").length === 0; } catch (e) { return true; }
+    }
+    return !f.value || !f.value.trim();
+  });
+
+  if (!missing.length) { notice.style.display = "none"; return; }
+  notice.style.display = "block";
+  notice.innerHTML = "<b>Still needed before you can pay:</b> " +
+    missing.map(function (f) { return f.label; }).join(", ");
+}
+
 var tripSaveBtn = document.getElementById("save-trip-details");
 if (tripSaveBtn) {
   tripSaveBtn.addEventListener("click", function () {
@@ -3219,6 +3245,7 @@ if (tripSaveBtn) {
         if (!r.ok) { status.textContent = r.data.error || "Could not save."; status.style.color = "var(--err)"; return false; }
         status.style.color = "var(--ok)"; status.textContent = "Saved.";
         updateQuestCompleteBadge(r.data.complete);
+        showMissingFieldsNotice(r.data.fields);
         if (currentChecklistApp) updatePaymentSection(currentChecklistApp);
         return true;
       })
