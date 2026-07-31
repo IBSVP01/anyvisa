@@ -1753,7 +1753,7 @@ footer a { color: var(--n-500); }
             <p id="booking-info-text" class="note" style="margin:0"></p>
           </div>
 
-          <p class="hint" style="margin:var(--s-4) 0">Upload these documents to keep your application moving. Our AI checks each one in minutes.</p>
+          <p class="hint" id="doc-checklist-hint" style="margin:var(--s-4) 0">Upload these documents to keep your application moving. Our AI checks each one in minutes.</p>
           <div id="doc-checklist"></div>
           <button class="btn btn-secondary" id="continue-to-payment" type="button" style="margin-top:var(--s-4)">Continue to payment →</button>
         </div>
@@ -2854,6 +2854,9 @@ function openDocumentChecklist(application) {
   // E-visas are filed and issued entirely online — there's no consulate
   // visit to pick a preferred date for, so this field is meaningless there.
   document.getElementById("trip-preferred-submission-wrap").style.display = application.isEvisa ? "none" : "block";
+  document.getElementById("doc-checklist-hint").textContent = application.isEvisa
+    ? "Upload these documents to keep your application moving."
+    : "Upload these documents to keep your application moving. Our AI checks each one in minutes.";
 
   // booking info: hidden until paid, yellow while in progress, green once done.
   // E-visa destinations never have an in-person appointment — the "booking"
@@ -3383,8 +3386,8 @@ function renderChecklist(application, checklist, byType, requiredDocs) {
     fileInput.addEventListener("change", function () {
       var file = fileInput.files[0];
       if (!file) return;
-      subEl.textContent = "Checking with AI…";
-      row.querySelector("label").childNodes[0].textContent = "Checking…";
+      subEl.textContent = application.isEvisa ? "Uploading…" : "Checking with AI…";
+      row.querySelector("label").childNodes[0].textContent = application.isEvisa ? "Uploading…" : "Checking…";
 
       var reader = new FileReader();
       reader.onload = function () {
