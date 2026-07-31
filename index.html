@@ -2605,7 +2605,7 @@ if (dashNavBtns.length) {
 }
 
 var STATUS_LABELS = {
-  documents_needed: { cls: "action", label: "Documents needed" },
+  documents_needed: { cls: "action", label: "In progress" },
   under_review: { cls: "progress", label: "Under consideration" },
   filed: { cls: "progress", label: "Filed with consulate" },
   approved: { cls: "done", label: "Visa issued" },
@@ -2644,21 +2644,35 @@ function loadMyApplications() {
         card.className = "app-card";
 
         var datesLine = "";
-        if (app.departureDate && app.returnDate) {
+        var depDate = app.departureDate ? new Date(app.departureDate) : null;
+        var retDate = app.returnDate ? new Date(app.returnDate) : null;
+        var datesLookSane = depDate && retDate && !isNaN(depDate) && !isNaN(retDate) &&
+          depDate.getFullYear() > 2000 && depDate.getFullYear() < 2100;
+        if (datesLookSane) {
           datesLine = "<div class='note' style='font-size:var(--fs-xs)'>" +
-            new Date(app.departureDate).toLocaleDateString("en-GB", { day: "numeric", month: "short" }) + " – " +
-            new Date(app.returnDate).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) + "</div>";
+            depDate.toLocaleDateString("en-GB", { day: "numeric", month: "short" }) + " – " +
+            retDate.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) + "</div>";
         }
 
         var apptHtml = "";
-        if (app.bookingStatus === "booked" && app.appointmentAt) {
-          var apptDate = new Date(app.appointmentAt);
-          apptHtml = "<div class='card-appt confirmed'>✓ Appointment<br>" +
-            apptDate.toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" }) + "</div>";
-        } else if (app.paid) {
-          apptHtml = "<div class='card-appt searching'>Slot being searched…</div>";
+        if (app.isEvisa) {
+          if (app.bookingStatus === "booked" && app.appointmentAt) {
+            apptHtml = "<div class='card-appt confirmed'>✓ Your e-visa is ready — check your email.</div>";
+          } else if (app.paid) {
+            apptHtml = "<div class='card-appt searching'>Application under consideration…</div>";
+          } else {
+            apptHtml = "<div class='card-appt'>Pending — we'll email you the visa once it's issued.</div>";
+          }
         } else {
-          apptHtml = "<div class='card-appt'>Appointment: pending — confirmed once we book your slot</div>";
+          if (app.bookingStatus === "booked" && app.appointmentAt) {
+            var apptDate = new Date(app.appointmentAt);
+            apptHtml = "<div class='card-appt confirmed'>✓ Appointment<br>" +
+              apptDate.toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" }) + "</div>";
+          } else if (app.paid) {
+            apptHtml = "<div class='card-appt searching'>Slot being searched…</div>";
+          } else {
+            apptHtml = "<div class='card-appt'>Appointment: pending — confirmed once we book your slot</div>";
+          }
         }
 
         card.innerHTML =
