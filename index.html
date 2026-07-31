@@ -1727,7 +1727,7 @@ footer a { color: var(--n-500); }
                 <label for="trip-return">Return date</label>
                 <input type="date" id="trip-return">
               </div>
-              <div class="auth-field" style="margin:0;grid-column:1/-1">
+              <div class="auth-field" style="margin:0;grid-column:1/-1" id="trip-preferred-submission-wrap">
                 <label for="trip-preferred-submission">Preferred date to submit at the consulate</label>
                 <input type="date" id="trip-preferred-submission">
               </div>
@@ -1749,7 +1749,7 @@ footer a { color: var(--n-500); }
 
         <div data-detail-panel="documents" style="display:none">
           <div class="admin-table" id="booking-info-card" style="padding:var(--s-5);margin:var(--s-4) 0;display:none">
-            <h3 style="font-size:var(--fs-base);margin-bottom:var(--s-3)">Appointment</h3>
+            <h3 id="booking-info-heading" style="font-size:var(--fs-base);margin-bottom:var(--s-3)">Appointment</h3>
             <p id="booking-info-text" class="note" style="margin:0"></p>
           </div>
 
@@ -1772,7 +1772,7 @@ footer a { color: var(--n-500); }
           </div>
 
           <div class="admin-table" id="paid-confirmation" style="padding:var(--s-5);margin:var(--s-4) 0;display:none;background:var(--ok-tint);border-color:#bfe3d2">
-            <p class="note" style="margin:0;color:var(--n-900)"><b>✓ Documents successfully sent.</b> You'll receive an email as soon as a submission slot is available.</p>
+            <p id="paid-confirmation-text" class="note" style="margin:0;color:var(--n-900)"></p>
           </div>
         </div>
       </div>
@@ -1787,7 +1787,6 @@ footer a { color: var(--n-500); }
         </div>
       </div>
       <div id="payments-list"><p class="note">Loading…</p></div>
-      <p class="note" style="margin-top:var(--s-4)">Online payment isn't wired up yet — this will go through Stripe. For now, "Pay now" shows what's owed; contact us to arrange payment.</p>
     </div>
 
     <!-- account settings tab -->
@@ -2852,22 +2851,48 @@ function openDocumentChecklist(application) {
   document.getElementById("trip-return").value = application.returnDate || "";
   document.getElementById("trip-preferred-submission").value = application.preferredSubmissionDate || "";
   document.getElementById("trip-save-status").textContent = "";
+  // E-visas are filed and issued entirely online — there's no consulate
+  // visit to pick a preferred date for, so this field is meaningless there.
+  document.getElementById("trip-preferred-submission-wrap").style.display = application.isEvisa ? "none" : "block";
 
-  // booking info: hidden until paid, yellow while searching, green once booked
+  // booking info: hidden until paid, yellow while in progress, green once done.
+  // E-visa destinations never have an in-person appointment — the "booking"
+  // concept becomes "we email you the visa once it's issued" instead.
   var bookingCard = document.getElementById("booking-info-card");
+  var bookingHeading = document.getElementById("booking-info-heading");
   bookingCard.classList.remove("booking-searching", "booking-confirmed");
   bookingCard.style.display = "block";
-  if (application.bookingStatus === "booked" && application.appointmentAt) {
-    var apptDate = new Date(application.appointmentAt);
-    document.getElementById("booking-info-text").textContent =
-      "✓ Your appointment has been booked for " + apptDate.toLocaleString("en-GB", { dateStyle: "full", timeStyle: "short" }) + ".";
-    bookingCard.classList.add("booking-confirmed");
-  } else if (application.paid) {
-    document.getElementById("booking-info-text").textContent = "Slot is being searched — we'll email you as soon as it's booked.";
-    bookingCard.classList.add("booking-searching");
+  if (application.isEvisa) {
+    bookingHeading.textContent = "Visa delivery";
+    if (application.bookingStatus === "booked" && application.appointmentAt) {
+      // For e-visas we repurpose "booked" to mean "the visa itself is ready".
+      document.getElementById("booking-info-text").textContent = "✓ Your e-visa is ready — check your email for the document.";
+      bookingCard.classList.add("booking-confirmed");
+    } else if (application.paid) {
+      document.getElementById("booking-info-text").textContent = "Your application has been filed — we'll email you the visa as soon as it's ready.";
+      bookingCard.classList.add("booking-searching");
+    } else {
+      document.getElementById("booking-info-text").textContent = "Pending — we'll email you the visa here as soon as it's issued.";
+    }
   } else {
-    document.getElementById("booking-info-text").textContent = "Pending — your appointment will be confirmed here once we've booked your slot.";
+    bookingHeading.textContent = "Appointment";
+    if (application.bookingStatus === "booked" && application.appointmentAt) {
+      var apptDate = new Date(application.appointmentAt);
+      document.getElementById("booking-info-text").textContent =
+        "✓ Your appointment has been booked for " + apptDate.toLocaleString("en-GB", { dateStyle: "full", timeStyle: "short" }) + ".";
+      bookingCard.classList.add("booking-confirmed");
+    } else if (application.paid) {
+      document.getElementById("booking-info-text").textContent = "Slot is being searched — we'll email you as soon as it's booked.";
+      bookingCard.classList.add("booking-searching");
+    } else {
+      document.getElementById("booking-info-text").textContent = "Pending — your appointment will be confirmed here once we've booked your slot.";
+    }
   }
+
+  // paid confirmation message — same e-visa-vs-consular distinction
+  document.getElementById("paid-confirmation-text").innerHTML = application.isEvisa
+    ? "<b>✓ Documents successfully sent.</b> We'll email you your visa as soon as it's ready — no appointment needed."
+    : "<b>✓ Documents successfully sent.</b> You'll receive an email as soon as a submission slot is available.";
 
   // payment section: only relevant once questionnaire + documents are done
   updatePaymentSection(application);
@@ -3263,26 +3288,23 @@ if (payNowBtn) {
     var status = document.getElementById("pay-status");
     status.textContent = "";
     payNowBtn.disabled = true;
-    payNowBtn.textContent = "Processing…";
-    fetch(API_BASE + "/api/applications/" + currentChecklistApp.id + "/pay", {
+    payNowBtn.textContent = "Redirecting to secure checkout…";
+    fetch(API_BASE + "/api/applications/" + currentChecklistApp.id + "/create-checkout-session", {
       method: "POST", credentials: "include", headers: { "Authorization": "Bearer " + authToken }
     })
       .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
       .then(function (r) {
-        payNowBtn.disabled = false;
-        payNowBtn.textContent = "Pay now";
-        if (!r.ok) { status.textContent = r.data.error || "Payment failed — try again."; return; }
-        currentChecklistApp.paid = true;
-        currentChecklistApp.bookingStatus = "not_booked";
-        document.getElementById("payment-section").style.display = "none";
-        document.getElementById("skip-docs-payment-section").style.display = "none";
-        document.getElementById("paid-confirmation").style.display = "block";
-        var bookingCard = document.getElementById("booking-info-card");
-        bookingCard.classList.remove("booking-confirmed");
-        bookingCard.classList.add("booking-searching");
-        document.getElementById("booking-info-text").textContent = "Slot is being searched — we'll email you as soon as it's booked.";
-        bookingCard.style.display = "block";
-        loadMyApplications();
+        if (!r.ok) {
+          payNowBtn.disabled = false;
+          payNowBtn.textContent = "Pay now";
+          status.textContent = r.data.error || "Could not start checkout — try again.";
+          return;
+        }
+        // Hand off to Stripe's own hosted payment page — this site never
+        // sees card details. The application only actually gets marked
+        // paid once Stripe's webhook confirms it server-to-server, not by
+        // this redirect, so there's nothing to fake here client-side.
+        window.location.href = r.data.url;
       })
       .catch(function () {
         payNowBtn.disabled = false;
@@ -3300,28 +3322,21 @@ if (skipDocsPayBtn) {
     var status = document.getElementById("skip-docs-pay-status");
     status.textContent = "";
     skipDocsPayBtn.disabled = true;
-    skipDocsPayBtn.textContent = "Processing…";
-    fetch(API_BASE + "/api/applications/" + currentChecklistApp.id + "/pay", {
+    skipDocsPayBtn.textContent = "Redirecting to secure checkout…";
+    fetch(API_BASE + "/api/applications/" + currentChecklistApp.id + "/create-checkout-session", {
       method: "POST", credentials: "include",
       headers: { "Content-Type": "application/json", "Authorization": "Bearer " + authToken },
       body: JSON.stringify({ skipDocuments: true })
     })
       .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
       .then(function (r) {
-        skipDocsPayBtn.disabled = false;
-        skipDocsPayBtn.textContent = "Skip document review — pay now";
-        if (!r.ok) { status.textContent = r.data.error || "Payment failed — try again."; return; }
-        currentChecklistApp.paid = true;
-        currentChecklistApp.bookingStatus = "not_booked";
-        document.getElementById("payment-section").style.display = "none";
-        document.getElementById("skip-docs-payment-section").style.display = "none";
-        document.getElementById("paid-confirmation").style.display = "block";
-        var bookingCard = document.getElementById("booking-info-card");
-        bookingCard.classList.remove("booking-confirmed");
-        bookingCard.classList.add("booking-searching");
-        document.getElementById("booking-info-text").textContent = "Slot is being searched — we'll email you as soon as it's booked.";
-        bookingCard.style.display = "block";
-        loadMyApplications();
+        if (!r.ok) {
+          skipDocsPayBtn.disabled = false;
+          skipDocsPayBtn.textContent = "Skip document review — pay now";
+          status.textContent = r.data.error || "Could not start checkout — try again.";
+          return;
+        }
+        window.location.href = r.data.url;
       })
       .catch(function () {
         skipDocsPayBtn.disabled = false;
@@ -3431,14 +3446,39 @@ function loadPayments() {
       apps.forEach(function (app) {
         var row = document.createElement("div");
         row.className = "payment-row";
+        var actionHtml = app.paid
+          ? "<span class='status-pill done'>Paid</span>"
+          : "<button type='button' class='btn btn-primary pay-row-btn' style='min-height:40px;padding:0 16px'>Pay now</button>";
         row.innerHTML =
           "<div><div class='ref'>AV-" + app.id.slice(0, 8) + "</div>" +
           "<div class='route'>" + app.country + " · " + app.purpose + " visa</div></div>" +
           "<span class='status-pill progress'>£" + app.totalFee + "</span>" +
-          "<button type='button' class='btn btn-primary' style='min-height:40px;padding:0 16px'>Pay now</button>";
-        row.querySelector("button").addEventListener("click", function () {
-          alert("Online payment via Stripe is coming soon. For now, please contact us to arrange payment for this application.");
-        });
+          actionHtml;
+        var btn = row.querySelector(".pay-row-btn");
+        if (btn) {
+          btn.addEventListener("click", function () {
+            btn.disabled = true;
+            btn.textContent = "Redirecting to secure checkout…";
+            fetch(API_BASE + "/api/applications/" + app.id + "/create-checkout-session", {
+              method: "POST", credentials: "include", headers: { "Authorization": "Bearer " + authToken }
+            })
+              .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
+              .then(function (r) {
+                if (!r.ok) {
+                  btn.disabled = false;
+                  btn.textContent = "Pay now";
+                  alert(r.data.error || "Could not start checkout — try again.");
+                  return;
+                }
+                window.location.href = r.data.url;
+              })
+              .catch(function () {
+                btn.disabled = false;
+                btn.textContent = "Pay now";
+                alert("Couldn't reach the server — try again.");
+              });
+          });
+        }
         list.appendChild(row);
       });
     })
@@ -3800,6 +3840,36 @@ document.addEventListener("click", function (e) {
 });
 showPage("home");
 
+// ---------- returning from Stripe Checkout ----------
+// Captured immediately (before anything else might touch the URL) — the
+// actual "is this paid" answer only ever comes from re-asking the server,
+// since the ?paid=1 param itself is just Stripe's redirect and proves
+// nothing on its own (anyone could type that URL by hand).
+var stripeReturnParams = new URLSearchParams(location.search);
+var stripeReturnAppId = stripeReturnParams.get("app");
+var stripeReturnPaid = stripeReturnParams.get("paid") === "1";
+if (stripeReturnParams.has("paid")) {
+  history.replaceState(null, "", location.pathname + (location.hash || "#dashboard"));
+}
+
+function pollStripePaymentConfirmed() {
+  if (!stripeReturnAppId || !stripeReturnPaid) return;
+  var attempts = 0;
+  (function poll() {
+    attempts++;
+    fetch(API_BASE + "/api/applications", { credentials: "include", headers: { "Authorization": "Bearer " + authToken } })
+      .then(function (res) { return res.ok ? res.json() : []; })
+      .then(function (apps) {
+        var app = (apps || []).find(function (a) { return a.id === stripeReturnAppId; });
+        if (app && app.paid) { loadMyApplications(); return; }
+        // Stripe's webhook can lag a second or two behind the browser
+        // redirect — keep checking briefly before giving up.
+        if (attempts < 8) setTimeout(poll, 1500);
+      })
+      .catch(function () {});
+  })();
+}
+
 // ---------- restore session on page load (via cookie, not localStorage) ----------
 // The session cookie (HttpOnly, set by the server on login/register) is sent
 // automatically by the browser on every request. This just asks the server
@@ -3825,6 +3895,7 @@ fetch(API_BASE + "/api/auth/me", { credentials: "include" })
     // authToken stays null here — that's fine, every request now includes
     // credentials: "include" so the cookie authenticates it regardless.
     updateDashboardIdentity();
+    pollStripePaymentConfirmed();
     // Restore exactly where they were — a specific application and tab if
     // that's what the hash encodes, otherwise the plain applications list.
     var appMatch = location.hash.match(/^#dashboard\/app\/([^/]+)\/([^/]+)$/);
