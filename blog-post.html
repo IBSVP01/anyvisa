@@ -5,27 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title id="post-title-tag">Loading… — AnyVisa Blog</title>
 <meta id="post-desc-tag" name="description" content="AnyVisa blog post.">
-<link id="post-canonical-tag" rel="canonical" href="https://anyvisa.uk/blog-post.html">
-
-<!-- favicon -->
-<link rel="icon" href="favicon.ico" sizes="any">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="manifest" href="site.webmanifest">
-<meta name="theme-color" content="#4338ca">
-
-<!-- Open Graph / Twitter — default values here, overwritten per-post by the
-     JS below once the post loads (see setPostMeta) -->
-<meta property="og:type" content="article">
-<meta property="og:site_name" content="AnyVisa">
-<meta id="post-og-title" property="og:title" content="AnyVisa Blog">
-<meta id="post-og-desc" property="og:description" content="AnyVisa blog post.">
-<meta id="post-og-url" property="og:url" content="https://anyvisa.uk/blog-post.html">
-<meta property="og:image" content="https://anyvisa.uk/og-image.png">
-<meta property="og:locale" content="en_GB">
-<meta name="twitter:card" content="summary_large_image">
-<meta id="post-twitter-title" name="twitter:title" content="AnyVisa Blog">
-<meta id="post-twitter-desc" name="twitter:description" content="AnyVisa blog post.">
-<meta name="twitter:image" content="https://anyvisa.uk/og-image.png">
 <style>/* ============================================================
    AnyVisa v5 — systematic UI
    Zero external dependencies. System font stack.
@@ -1183,7 +1162,6 @@ footer a { color: var(--n-500); }
     </a>
     <button class="nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav-links">&#9776;</button>
     <div class="nav-links" id="nav-links">
-      <a href="about.html">About</a>
       <a href="index.html#reviews">Reviews</a>
       <a href="index.html#how">How it works</a>
       <a href="index.html#dashboard">My account</a>
@@ -1208,7 +1186,7 @@ footer a { color: var(--n-500); }
     <div class="footer-grid">
       <div>
         <a class="brand" href="index.html"><span class="word"><b>ANY</b>VISA</span></a>
-        <p style="margin-top:12px;max-width:36ch">Automated visa processing for 190+ destinations. Filing applications since 2007 — fully online since 2026.</p>
+        <p style="margin-top:12px;max-width:36ch">Automated visa processing for 190+ destinations. Filing applications since 2008 — fully online since 2026.</p>
       </div>
       <div>
         <h4>Product</h4>
@@ -1220,11 +1198,11 @@ footer a { color: var(--n-500); }
       </div>
       <div>
         <h4>Company</h4>
-        <ul><li>Visa To Go Ltd</li><li>Registered in England No. 11370607</li><li><a href="mailto:info@visatogo.co.uk">info@visatogo.co.uk</a></li><li><a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a> · <a href="disclaimer.html">Disclaimer</a></li></ul>
+        <ul><li>Visa To Go Ltd</li><li>Registered in England No. 11370607</li><li><a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a> · <a href="disclaimer.html">Disclaimer</a></li></ul>
       </div>
       <div>
         <h4>Sitemap</h4>
-        <ul><li><a href="index.html">Home</a></li><li><a href="about.html">About Us</a></li><li><a href="blog.html">Blog</a></li><li><a href="privacy.html">Privacy Policy</a></li><li><a href="terms.html">Terms &amp; Conditions</a></li><li><a href="disclaimer.html">Legal Disclaimer</a></li></ul>
+        <ul><li><a href="index.html">Home</a></li><li><a href="blog.html">Blog</a></li><li><a href="requirements.html">Visa requirements</a></li><li><a href="privacy.html">Privacy Policy</a></li><li><a href="terms.html">Terms &amp; Conditions</a></li><li><a href="disclaimer.html">Legal Disclaimer</a></li></ul>
       </div>
     </div>
     <div class="footer-legal">
@@ -1236,13 +1214,24 @@ footer a { color: var(--n-500); }
 
 <script>
 var API_BASE = "https://dedicate-tusk-storewide.ngrok-free.dev";
+// The backend is tunneled through ngrok's free tier during early testing,
+// which shows a one-time browser warning page before allowing traffic
+// through — this header tells ngrok to skip it so fetch() calls get real
+// JSON back instead of that warning page's HTML. Harmless once this moves
+// to a real host without ngrok in front of it.
+(function () {
+  var _nativeFetch = window.fetch;
+  window.fetch = function (url, options) {
+    options = options || {};
+    options.headers = Object.assign({ "ngrok-skip-browser-warning": "true" }, options.headers || {});
+    return _nativeFetch(url, options);
+  };
+})();
+
 var slug = new URLSearchParams(location.search).get("slug");
 var article = document.getElementById("post-article");
-var postUrl = "https://anyvisa.uk/blog-post.html?slug=" + encodeURIComponent(slug || "");
-
 if (!slug) {
   article.innerHTML = "<p class='note'>No post specified.</p>";
-  setRobotsNoIndex();
 } else {
   fetch(API_BASE + "/api/blog/" + encodeURIComponent(slug))
     .then(function (res) { return res.ok ? res.json() : null; })
@@ -1251,57 +1240,20 @@ if (!slug) {
       if (!post) {
         article.innerHTML = "<h1>Post not found</h1><p class='hint'>This post may have been unpublished or the link is incorrect. <a href='blog.html'>Back to the blog</a>.</p>";
         document.getElementById("post-title-tag").textContent = "Post not found — AnyVisa Blog";
-        setRobotsNoIndex(); // don't let a dead/unpublished slug get indexed as real content
         return;
       }
-      var fullTitle = post.metaTitle + " — AnyVisa Blog";
-      document.title = fullTitle;
+      document.title = post.metaTitle + " — AnyVisa Blog";
       document.getElementById("post-desc-tag").setAttribute("content", post.metaDescription || "");
-      document.getElementById("post-canonical-tag").setAttribute("href", postUrl);
-      document.getElementById("post-og-title").setAttribute("content", fullTitle);
-      document.getElementById("post-og-desc").setAttribute("content", post.metaDescription || "");
-      document.getElementById("post-og-url").setAttribute("content", postUrl);
-      document.getElementById("post-twitter-title").setAttribute("content", fullTitle);
-      document.getElementById("post-twitter-desc").setAttribute("content", post.metaDescription || "");
       document.getElementById("post-crumb").textContent = post.title;
       var date = post.publishedAt ? new Date(post.publishedAt).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }) : "";
       article.innerHTML =
         "<div class='note' style='font-size:13px;margin-bottom:8px'>" + date + (post.author ? " · " + post.author : "") + "</div>" +
         "<h1 style='margin-bottom:24px'>" + post.title + "</h1>" +
         "<div class='legal-copy'>" + post.content + "</div>";
-
-      // BlogPosting structured data — makes this post eligible for
-      // article rich results (author/date shown directly in search).
-      var ld = document.createElement("script");
-      ld.type = "application/ld+json";
-      ld.textContent = JSON.stringify({
-        "@context": "https://schema.org",
-        "@type": "BlogPosting",
-        "headline": post.title,
-        "description": post.metaDescription || post.summary || "",
-        "datePublished": post.publishedAt || undefined,
-        "dateModified": post.updatedAt || post.publishedAt || undefined,
-        "author": { "@type": "Organization", "name": post.author || "AnyVisa" },
-        "publisher": {
-          "@type": "Organization",
-          "name": "AnyVisa",
-          "logo": { "@type": "ImageObject", "url": "https://anyvisa.uk/logo.png" }
-        },
-        "mainEntityOfPage": { "@type": "WebPage", "@id": postUrl },
-        "image": "https://anyvisa.uk/og-image.png"
-      });
-      document.head.appendChild(ld);
     })
     .catch(function () {
       article.innerHTML = "<p class='note'>Couldn't load this post right now — try again shortly.</p>";
     });
-}
-
-function setRobotsNoIndex() {
-  var m = document.createElement("meta");
-  m.name = "robots";
-  m.content = "noindex";
-  document.head.appendChild(m);
 }
 </script>
 </body>
