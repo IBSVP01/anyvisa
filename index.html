@@ -147,6 +147,32 @@ a:hover { text-decoration: underline; }
 :focus-visible { outline: 2px solid var(--n-900); outline-offset: 2px; border-radius: 4px; }
 ::selection { background: var(--brand-tint); }
 
+/* ---------------- universal select styling ----------------
+   Every <select> on the site — hero form, wizard, questionnaires (incl.
+   huge country lists), admin panels, repeater sub-fields — gets this same
+   base look. More specific rules further down (.hero-form select,
+   .auth-field select, etc.) still win on sizing where they need to, since
+   a class+element selector always beats a bare element selector; this
+   just guarantees nothing on the site ever falls back to a raw unstyled
+   OS dropdown. */
+select {
+  appearance: none; -webkit-appearance: none; -moz-appearance: none;
+  width: 100%; min-height: 46px; padding: 0 40px 0 16px;
+  font-family: var(--font); font-size: var(--fs-sm); color: var(--n-900);
+  background-color: var(--white);
+  border: 1.5px solid var(--n-300); border-radius: var(--r-sm);
+  cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%235b6672' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 12px center; background-size: 18px;
+}
+select:hover:not(:disabled) { border-color: var(--n-500); }
+select:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-tint); }
+select:disabled { background-color: var(--n-50); color: var(--n-400); cursor: not-allowed; opacity: 1; }
+select option { color: var(--n-900); }
+/* Firefox insists on drawing its own focus ring inside the option text —
+   this suppresses it without needing prefixed pseudo-elements per browser. */
+select:-moz-focusring { color: transparent; text-shadow: 0 0 0 var(--n-900); }
+
 .container { max-width: var(--maxw); margin: 0 auto; padding: 0 var(--s-5); }
 .skip-link {
   position: absolute; left: -9999px; top: 0; z-index: 100;
@@ -271,8 +297,8 @@ a:hover { text-decoration: underline; }
 .hero-form { display: grid; gap: var(--s-3); max-width: 520px; }
 .hero-form-row { display: grid; grid-template-columns: 1fr; gap: var(--s-3); }
 .hero-form select {
-  width: 100%; min-height: 56px; padding: 0 var(--s-4); font-size: var(--fs-base); font-family: var(--font);
-  border: none; border-radius: 14px; background: #fff; color: var(--n-900);
+  width: 100%; min-height: 56px; padding: 0 40px 0 var(--s-4); font-size: var(--fs-base); font-family: var(--font);
+  border: none; border-radius: 14px; background-color: #fff; color: var(--n-900);
 }
 .hero-form select:focus { outline: 3px solid #ffffff88; }
 
@@ -363,9 +389,10 @@ a:hover { text-decoration: underline; }
 .field .hint { font-size: var(--fs-xs); color: var(--n-400); margin-top: var(--s-1); }
 .field select, .field input[type="text"] {
   width: 100%; min-height: 44px; padding: 0 var(--s-3); font-size: var(--fs-sm); font-family: var(--font);
-  border: 1px solid var(--n-300); border-radius: var(--r-sm); background: var(--white); color: var(--n-900);
+  border: 1px solid var(--n-300); border-radius: var(--r-sm); background-color: var(--white); color: var(--n-900);
 }
-.field select:disabled { background: var(--n-50); color: var(--n-400); cursor: not-allowed; }
+.field select { padding-right: 40px; }
+.field select:disabled { background-color: var(--n-50); color: var(--n-400); cursor: not-allowed; }
 .field select:hover:not(:disabled), .field input:hover { border-color: var(--n-400); }
 .field select:focus, .field input:focus {
   outline: none; border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-tint);
@@ -669,10 +696,17 @@ footer a { color: var(--n-500); }
 #payments-list { display: grid; gap: var(--s-3); }
 .payment-row {
   border: 1px solid var(--n-200); border-radius: var(--r); padding: var(--s-4) var(--s-5);
-  display: grid; grid-template-columns: 1fr auto auto; gap: var(--s-4); align-items: center;
+  display: grid; grid-template-columns: 1fr 90px 160px; gap: var(--s-4); align-items: center;
   background: #fff;
 }
-@media (max-width: 640px) { .payment-row { grid-template-columns: 1fr; text-align: left; } }
+.payment-row .price-col { justify-self: end; }
+.payment-row .action-col { justify-self: end; width: 100%; text-align: right; }
+.payment-row .action-col .btn, .payment-row .action-col .status-pill { width: 100%; justify-content: center; }
+@media (max-width: 640px) {
+  .payment-row { grid-template-columns: 1fr; text-align: left; }
+  .payment-row .price-col, .payment-row .action-col { justify-self: start; text-align: left; }
+  .payment-row .action-col .btn, .payment-row .action-col .status-pill { width: auto; }
+}
 .payment-row .ref { font-size: var(--fs-xs); color: var(--n-400); font-variant-numeric: tabular-nums; }
 .payment-row .route { font-weight: 700; color: var(--n-900); font-size: var(--fs-base); margin-top: 2px; }
 .app-card {
@@ -715,6 +749,14 @@ footer a { color: var(--n-500); }
 }
 .doc-row .name { color: var(--n-800); font-weight: 500; }
 .doc-row .sub { color: var(--n-400); font-size: var(--fs-xs); }
+.doc-row .doc-actions { display: flex; align-items: center; gap: var(--s-2); }
+.download-btn {
+  display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600;
+  color: var(--ok); background: var(--ok-tint); border: 1px solid #bfe3d2; border-radius: 999px;
+  padding: 7px 14px; min-height: 32px; text-decoration: none !important; transition: background 0.15s, border-color 0.15s;
+}
+.download-btn:hover { background: #ddf1e6; border-color: #9fd4b8; text-decoration: none; }
+.download-btn .ic { width: 14px; height: 14px; }
 .doc-status { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-xs); font-weight: 700; }
 .doc-status.ok { color: var(--ok); }
 .doc-status.checking { color: var(--n-400); }
@@ -1028,6 +1070,7 @@ footer a { color: var(--n-500); }
   width: 100%; padding: 6px 8px; font-size: var(--fs-xs); font-family: var(--font);
   border: 1px solid var(--n-300); border-radius: 4px;
 }
+.doc-req-row select { padding-right: 28px; background-size: 14px; background-position: right 8px center; }
 .doc-req-row textarea { resize: vertical; min-height: 40px; }
 .doc-req-row button { align-self: start; }
 .citizenship-grid {
@@ -1123,6 +1166,7 @@ footer a { color: var(--n-500); }
   width: 100%; min-height: 48px; padding: 0 var(--s-4); font-size: var(--fs-base); font-family: var(--font);
   border: 1px solid var(--n-300); border-radius: var(--r-sm);
 }
+.auth-field select { padding-right: 40px; }
 .auth-field input:focus, .auth-field select:focus { outline: none; border-color: var(--n-900); }
 .auth-err { display: none; background: #fdeaea; color: var(--err); font-size: var(--fs-xs); font-weight: 600; padding: var(--s-2) var(--s-3); border-radius: var(--r-sm); margin-bottom: var(--s-3); }
 .auth-err.show { display: block; }
@@ -1207,6 +1251,7 @@ footer a { color: var(--n-500); }
   <symbol id="i-gbp" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M14.5 8.5a2.5 2.5 0 0 0-4.5 1.5c0 2 .5 3-1 5h6M8.5 13h4"/></symbol>
   <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
   <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v12M7 11l5 5 5-5"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></symbol>
   <symbol id="i-chevron" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
 </svg>
 
@@ -1760,6 +1805,23 @@ footer a { color: var(--n-500); }
         </div>
 
         <div data-detail-panel="payment" style="display:none">
+          <div class="admin-table" id="price-summary" style="padding:var(--s-5);margin:var(--s-4) 0">
+            <div class="order-row"><span class="lbl">Government fee</span><span class="val" id="price-gov-fee">£0</span></div>
+            <div class="order-row"><span class="lbl">Service fee</span><span class="val" id="price-service-fee">£0</span></div>
+            <div class="order-row" id="price-discount-row" style="display:none"><span class="lbl">Discount (<span id="price-promo-label"></span>)</span><span class="val" style="color:var(--ok)" id="price-discount-amount">−£0</span></div>
+            <div class="order-total"><span class="lbl">Total</span><span class="val" id="price-total">£0</span></div>
+
+            <div id="promo-apply-row" style="display:flex;gap:var(--s-3);margin-top:var(--s-4);flex-wrap:wrap">
+              <input type="text" id="promo-code-input" placeholder="Promo code" style="flex:1;min-width:160px;padding:10px 14px;border:1px solid var(--n-300);border-radius:8px;text-transform:uppercase">
+              <button class="btn btn-secondary" id="promo-apply-btn" type="button" style="min-height:44px">Apply</button>
+            </div>
+            <div id="promo-applied-row" style="display:none;margin-top:var(--s-3);align-items:center;gap:var(--s-3)">
+              <span class="status-pill done">Code <b id="promo-applied-code"></b> applied</span>
+              <a id="promo-remove-link" style="font-size:var(--fs-xs);color:var(--n-500);text-decoration:underline;cursor:pointer">Remove</a>
+            </div>
+            <p id="promo-status" style="font-size:var(--fs-xs);color:var(--err);margin-top:var(--s-2)"></p>
+          </div>
+
           <div class="admin-table" id="payment-section" style="padding:var(--s-5);margin:var(--s-4) 0;text-align:center">
             <p class="note" style="margin:0 0 var(--s-3)">Everything's filled in — pay now to send your application and documents for processing.</p>
             <button class="btn btn-primary" id="pay-now-btn" type="button" disabled style="min-height:44px;padding:0 24px">Pay now</button>
@@ -2169,7 +2231,7 @@ footer a { color: var(--n-500); }
           <h3>What's your citizenship?</h3>
           <p class="hint">This determines which destinations and requirements apply to you</p>
           <div style="max-width:380px;margin:0 auto">
-            <select id="wiz-citizenship" style="width:100%;padding:14px 16px;font-size:16px;border:1px solid var(--n-300);border-radius:10px;font-family:var(--font)"></select>
+            <select id="wiz-citizenship" style="width:100%;padding:14px 40px 14px 16px;font-size:16px;border:1px solid var(--n-300);border-radius:10px;font-family:var(--font)"></select>
           </div>
         </div>
       </div>
@@ -2181,7 +2243,7 @@ footer a { color: var(--n-500); }
           <h3>Where are you going?</h3>
           <p class="hint">Only destinations available for your citizenship are shown</p>
           <div style="max-width:380px;margin:0 auto">
-            <select id="wiz-destination" style="width:100%;padding:14px 16px;font-size:16px;border:1px solid var(--n-300);border-radius:10px;font-family:var(--font)"></select>
+            <select id="wiz-destination" style="width:100%;padding:14px 40px 14px 16px;font-size:16px;border:1px solid var(--n-300);border-radius:10px;font-family:var(--font)"></select>
             <div id="wiz-evisa-note" style="display:none;margin-top:12px;padding:10px 14px;background:var(--brand-tint);border-radius:8px;font-size:12.5px;color:var(--n-700);line-height:1.4;text-align:left">
               This is an <b>e-visa</b> — fully online, no consulate appointment needed. Not every nationality is eligible; we confirm this for your passport before filing.
             </div>
@@ -2873,6 +2935,8 @@ function openDocumentChecklist(application) {
     ? "Upload these documents to keep your application moving."
     : "Upload these documents to keep your application moving. Our AI checks each one in minutes.";
 
+  renderPriceSummary(application);
+
   // booking info: hidden until paid, yellow while in progress, green once done.
   // E-visa destinations never have an in-person appointment — the "booking"
   // concept becomes "we email you the visa once it's issued" instead.
@@ -3058,8 +3122,9 @@ function renderQuestionnaireFields(fields, container) {
               sfInput = document.createElement("input");
               sfInput.type = sf.type === "date" ? "date" : "text";
             }
-            sfInput.style.cssText = "box-sizing:border-box;width:100%;height:36px;padding:6px 8px;border:1px solid var(--n-300);border-radius:6px;font-family:var(--font);font-size:13px;background:var(--white)";
+            sfInput.style.cssText = "box-sizing:border-box;width:100%;height:36px;padding:6px 8px;border:1px solid var(--n-300);border-radius:6px;font-family:var(--font);font-size:13px;background-color:var(--white)";
             if (sf.type === "textarea") sfInput.style.height = "auto";
+            if (sf.type === "select") { sfInput.style.paddingRight = "28px"; sfInput.style.backgroundSize = "14px"; sfInput.style.backgroundPosition = "right 8px center"; }
             sfInput.value = entry[sf.key] || "";
             sfInput.addEventListener("input", function () { entry[sf.key] = sfInput.value; syncHidden(); });
             if (sf.type === "select") sfInput.addEventListener("change", function () { entry[sf.key] = sfInput.value; syncHidden(); });
@@ -3277,6 +3342,86 @@ if (tripSaveBtn) {
 // Shows/hides the "Pay now" button vs the "paid" confirmation, based on
 // whether the questionnaire is complete and every required document has
 // been uploaded at least once. Called on open and after every upload.
+function renderPriceSummary(application) {
+  var gov = application.governmentFee != null ? application.governmentFee : 0;
+  var service = application.serviceFee != null ? application.serviceFee : 0;
+  var discount = application.discountAmount || 0;
+  var total = application.totalFee != null ? application.totalFee : (gov + service - discount);
+
+  document.getElementById("price-gov-fee").textContent = "£" + gov;
+  document.getElementById("price-service-fee").textContent = "£" + service;
+  document.getElementById("price-total").textContent = "£" + total;
+
+  var discountRow = document.getElementById("price-discount-row");
+  var appliedRow = document.getElementById("promo-applied-row");
+  var applyRow = document.getElementById("promo-apply-row");
+
+  if (application.promoCode) {
+    discountRow.style.display = "flex";
+    document.getElementById("price-discount-amount").textContent = "−£" + discount;
+    document.getElementById("price-promo-label").textContent = application.promoCode;
+    appliedRow.style.display = "flex";
+    document.getElementById("promo-applied-code").textContent = application.promoCode;
+    applyRow.style.display = "none";
+  } else {
+    discountRow.style.display = "none";
+    appliedRow.style.display = "none";
+    applyRow.style.display = "flex";
+  }
+  // Paid applications shouldn't be able to change the promo code anymore.
+  if (application.paid) {
+    applyRow.style.display = "none";
+    appliedRow.querySelector("#promo-remove-link") && (appliedRow.querySelector("#promo-remove-link").style.display = "none");
+  }
+}
+
+document.getElementById("promo-apply-btn").addEventListener("click", function () {
+  if (!currentChecklistApp) return;
+  var input = document.getElementById("promo-code-input");
+  var status = document.getElementById("promo-status");
+  var code = input.value.trim();
+  if (!code) { status.textContent = "Enter a code."; return; }
+  status.style.color = "var(--n-500)"; status.textContent = "Checking…";
+
+  fetch(API_BASE + "/api/applications/" + currentChecklistApp.id + "/apply-promo-code", {
+    method: "POST", credentials: "include", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + authToken },
+    body: JSON.stringify({ code: code })
+  })
+    .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
+    .then(function (r) {
+      if (!r.ok) { status.style.color = "var(--err)"; status.textContent = r.data.error || "That code didn't work."; return; }
+      status.textContent = "";
+      input.value = "";
+      currentChecklistApp.governmentFee = r.data.governmentFee;
+      currentChecklistApp.serviceFee = r.data.serviceFee;
+      currentChecklistApp.discountAmount = r.data.discountAmount;
+      currentChecklistApp.totalFee = r.data.total;
+      currentChecklistApp.promoCode = r.data.promoCode;
+      renderPriceSummary(currentChecklistApp);
+    })
+    .catch(function () { status.style.color = "var(--err)"; status.textContent = "Couldn't reach the server."; });
+});
+
+document.getElementById("promo-remove-link").addEventListener("click", function () {
+  if (!currentChecklistApp) return;
+  var status = document.getElementById("promo-status");
+  status.textContent = "";
+  fetch(API_BASE + "/api/applications/" + currentChecklistApp.id + "/promo-code", {
+    method: "DELETE", credentials: "include", headers: { "Authorization": "Bearer " + authToken }
+  })
+    .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
+    .then(function (r) {
+      if (!r.ok) { status.style.color = "var(--err)"; status.textContent = r.data.error || "Could not remove code."; return; }
+      currentChecklistApp.governmentFee = r.data.governmentFee;
+      currentChecklistApp.serviceFee = r.data.serviceFee;
+      currentChecklistApp.discountAmount = r.data.discountAmount;
+      currentChecklistApp.totalFee = r.data.total;
+      currentChecklistApp.promoCode = r.data.promoCode;
+      renderPriceSummary(currentChecklistApp);
+    })
+    .catch(function () { status.style.color = "var(--err)"; status.textContent = "Couldn't reach the server."; });
+});
+
 function updatePaymentSection(application) {
   var paySection = document.getElementById("payment-section");
   var skipDocsSection = document.getElementById("skip-docs-payment-section");
@@ -3415,13 +3560,14 @@ function renderChecklist(application, checklist, byType, requiredDocs) {
       }
     }
     var downloadHtml = (existing && existing.status === "passed" && existing.hasFile)
-      ? "<a href='" + API_BASE + "/api/documents/" + existing.id + "/download' target='_blank' style='font-size:12px;margin-left:8px'>Download</a>"
+      ? "<a class='download-btn' href='" + API_BASE + "/api/documents/" + existing.id + "/download' target='_blank'><svg class='ic'><use href='#i-download'/></svg>Download</a>"
       : "";
     row.innerHTML =
       "<svg class='ic sm'><use href='#i-doc'/></svg>" +
-      "<div><div class='name'>" + doc.docName + "</div><div class='sub'>" + initialSub + downloadHtml + "</div></div>" +
+      "<div><div class='name'>" + doc.docName + "</div><div class='sub'>" + initialSub + "</div></div>" +
+      "<div class='doc-actions'>" + downloadHtml +
       "<label class='btn btn-secondary' style='min-height:36px;padding:0 16px;cursor:pointer'>" +
-      initialLabel + "<input type='file' accept='image/*,application/pdf' style='display:none'></label>";
+      initialLabel + "<input type='file' accept='image/*,application/pdf' style='display:none'></label></div>";
     var fileInput = row.querySelector("input[type=file]");
     var subEl = row.querySelector(".sub");
     fileInput.addEventListener("change", function () {
@@ -3445,6 +3591,9 @@ function renderChecklist(application, checklist, byType, requiredDocs) {
           .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
           .then(function (r) {
             var labelNode = row.querySelector("label").childNodes[0];
+            var actionsEl = row.querySelector(".doc-actions");
+            var existingDownloadBtn = actionsEl.querySelector(".download-btn");
+            if (existingDownloadBtn) existingDownloadBtn.remove();
             if (!r.ok) {
               subEl.textContent = r.data.error || "Review failed — try again.";
               labelNode.textContent = "Retry";
@@ -3453,8 +3602,13 @@ function renderChecklist(application, checklist, byType, requiredDocs) {
             }
             if (r.data.status === "passed") {
               row.classList.add("done");
-              subEl.innerHTML = (r.data.reason || "Looks good.") +
-                "<a href='" + API_BASE + "/api/documents/" + r.data.id + "/download' target='_blank' style='font-size:12px;margin-left:8px'>Download</a>";
+              subEl.textContent = r.data.reason || "Looks good.";
+              var downloadBtn = document.createElement("a");
+              downloadBtn.className = "download-btn";
+              downloadBtn.target = "_blank";
+              downloadBtn.href = API_BASE + "/api/documents/" + r.data.id + "/download";
+              downloadBtn.innerHTML = "<svg class='ic'><use href='#i-download'/></svg>Download";
+              actionsEl.insertBefore(downloadBtn, actionsEl.firstChild);
               labelNode.textContent = "Re-upload";
             } else {
               var label = r.data.status === "failed" ? "Rejected" : "Sent for human review";
@@ -3496,8 +3650,8 @@ function loadPayments() {
         row.innerHTML =
           "<div><div class='ref'>AV-" + app.id.slice(0, 8) + "</div>" +
           "<div class='route'>" + app.country + " · " + app.purpose + " visa</div></div>" +
-          "<span class='status-pill progress'>£" + app.totalFee + "</span>" +
-          actionHtml;
+          "<div class='price-col'><span class='status-pill progress'>£" + app.totalFee + "</span></div>" +
+          "<div class='action-col'>" + actionHtml + "</div>";
         var btn = row.querySelector(".pay-row-btn");
         if (btn) {
           btn.addEventListener("click", function () {

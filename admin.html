@@ -98,6 +98,23 @@ a:hover { text-decoration: underline; }
 :focus-visible { outline: 2px solid var(--n-900); outline-offset: 2px; border-radius: 4px; }
 ::selection { background: var(--brand-tint); }
 
+/* ---------------- universal select styling (see index.html for the same
+   rule and rationale) ---------------- */
+select {
+  appearance: none; -webkit-appearance: none; -moz-appearance: none;
+  width: 100%; min-height: 46px; padding: 0 40px 0 16px;
+  font-family: var(--font); font-size: var(--fs-sm); color: var(--n-900);
+  background-color: var(--white);
+  border: 1.5px solid var(--n-300); border-radius: var(--r-sm);
+  cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%235b6672' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 12px center; background-size: 18px;
+}
+select:hover:not(:disabled) { border-color: var(--n-500); }
+select:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-tint); }
+select:disabled { background-color: var(--n-50); color: var(--n-400); cursor: not-allowed; opacity: 1; }
+select:-moz-focusring { color: transparent; text-shadow: 0 0 0 var(--n-900); }
+
 .container { max-width: var(--maxw); margin: 0 auto; padding: 0 var(--s-5); }
 .skip-link {
   position: absolute; left: -9999px; top: 0; z-index: 100;
@@ -316,7 +333,7 @@ a:hover { text-decoration: underline; }
   width: 100%; min-height: 44px; padding: 0 var(--s-3); font-size: var(--fs-sm); font-family: var(--font);
   border: 1px solid var(--n-300); border-radius: var(--r-sm); background: var(--white); color: var(--n-900);
 }
-.field select:disabled { background: var(--n-50); color: var(--n-400); cursor: not-allowed; }
+.field select:disabled { background-color: var(--n-50); color: var(--n-400); cursor: not-allowed; }
 .field select:hover:not(:disabled), .field input:hover { border-color: var(--n-400); }
 .field select:focus, .field input:focus {
   outline: none; border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-tint);
@@ -979,6 +996,7 @@ footer a { color: var(--n-500); }
   width: 100%; padding: 6px 8px; font-size: var(--fs-xs); font-family: var(--font);
   border: 1px solid var(--n-300); border-radius: 4px;
 }
+.doc-req-row select { padding-right: 28px; background-size: 14px; background-position: right 8px center; }
 .doc-req-row textarea { resize: vertical; min-height: 40px; }
 .doc-req-row button { align-self: start; }
 .citizenship-grid {
@@ -1052,6 +1070,7 @@ footer a { color: var(--n-500); }
   width: 100%; min-height: 48px; padding: 0 var(--s-4); font-size: var(--fs-base); font-family: var(--font);
   border: 1px solid var(--n-300); border-radius: var(--r-sm);
 }
+.auth-field select { padding-right: 40px; }
 .auth-field input:focus, .auth-field select:focus { outline: none; border-color: var(--n-900); }
 .auth-err { display: none; background: #fdeaea; color: var(--err); font-size: var(--fs-xs); font-weight: 600; padding: var(--s-2) var(--s-3); border-radius: var(--r-sm); margin-bottom: var(--s-3); }
 .auth-err.show { display: block; }
@@ -1214,6 +1233,7 @@ footer a { color: var(--n-500); }
         <li><button data-tab="customers">Customers</button></li>
         <li><button data-tab="crm">Client DB</button></li>
         <li><button data-tab="questionnaires">Questionnaires</button></li>
+        <li><button data-tab="promocodes">Promo codes</button></li>
         <li><button data-tab="queue">AI review queue</button></li>
         <li><button data-tab="blog">Blog</button></li>
         <li><button data-tab="arch">System &amp; data</button></li>
@@ -1260,6 +1280,38 @@ footer a { color: var(--n-500); }
           </div>
         </div>
         <div id="applications-list"><p class="note">Loading…</p></div>
+      </div>
+
+      <!-- promo codes -->
+      <div class="admin-tab" data-tab="promocodes" style="display:none">
+        <div class="dash-head">
+          <div>
+            <h1 style="font-size:var(--fs-xl)">Promo codes</h1>
+            <p>Discounts apply to the service fee only — the government fee is always charged in full, at cost.</p>
+          </div>
+        </div>
+
+        <div class="admin-table" style="padding:var(--s-5);margin-bottom:var(--s-5)">
+          <h3 style="font-size:var(--fs-base);margin-bottom:var(--s-4)">Create a code</h3>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:var(--s-3)">
+            <div class="auth-field" style="margin:0"><label>Code</label><input type="text" id="promo-new-code" placeholder="WELCOME10" style="text-transform:uppercase"></div>
+            <div class="auth-field" style="margin:0"><label>Type</label>
+              <select id="promo-new-type"><option value="percent">% off</option><option value="fixed">£ off</option></select>
+            </div>
+            <div class="auth-field" style="margin:0"><label>Value</label><input type="number" id="promo-new-value" placeholder="10" min="0" step="0.01"></div>
+            <div class="auth-field" style="margin:0"><label>Max uses (optional)</label><input type="number" id="promo-new-maxuses" placeholder="Unlimited" min="1"></div>
+          </div>
+          <div class="auth-field" style="margin:var(--s-3) 0 0;max-width:220px"><label>Expires (optional)</label><input type="date" id="promo-new-expires"></div>
+          <div style="display:flex;gap:var(--s-3);align-items:center;margin-top:var(--s-3)">
+            <button class="btn btn-primary" id="promo-add-btn" type="button">Create code</button>
+            <span id="promo-add-status" style="font-size:var(--fs-xs);color:var(--err)"></span>
+          </div>
+        </div>
+
+        <table class="admin-table">
+          <thead><tr><th>Code</th><th>Discount</th><th>Used</th><th>Expires</th><th>Active</th><th></th></tr></thead>
+          <tbody id="promo-tbody"><tr><td colspan="6">Loading…</td></tr></tbody>
+        </table>
       </div>
 
       <!-- questionnaire templates -->
@@ -1405,6 +1457,11 @@ footer a { color: var(--n-500); }
           <div class="auth-field" style="margin:0"><label>Subject</label><input type="text" id="crm-msg-subject"></div>
           <div class="auth-field" style="margin:var(--s-3) 0 0"><label>Message (HTML)</label>
             <textarea id="crm-msg-html" rows="8" style="width:100%;padding:10px 12px;font-family:monospace;font-size:13px;border:1px solid var(--n-300);border-radius:8px" placeholder="&lt;p&gt;Hi! …&lt;/p&gt;"></textarea>
+          </div>
+          <div class="auth-field" style="margin:var(--s-3) 0 0">
+            <label>Attachments (optional, 5MB total — sending gets a bit slower with attachments, one email at a time instead of in batches)</label>
+            <input type="file" id="crm-msg-files" multiple>
+            <div id="crm-msg-files-list" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px"></div>
           </div>
           <div style="display:flex;gap:var(--s-3);align-items:center;margin-top:var(--s-4)">
             <button class="btn btn-primary" id="crm-msg-send-btn" type="button">Send</button>
@@ -1741,6 +1798,7 @@ adminNavBtns.forEach(function (btn) {
     if (btn.dataset.tab === "customers") { loadCustomers(); loadTasksDue(); }
     if (btn.dataset.tab === "crm") { loadCrmFilters(); loadCrmClients(); }
     if (btn.dataset.tab === "questionnaires") loadQTemplates();
+    if (btn.dataset.tab === "promocodes") loadPromoCodes();
   });
 });
 
@@ -2597,11 +2655,55 @@ document.getElementById("crm-save-btn").addEventListener("click", function () {
     .catch(function () { status.style.color = "var(--err)"; status.textContent = "Couldn't reach the server."; });
 });
 
+var crmMsgFiles = [];
+
+function renderCrmMsgFileChips() {
+  var list = document.getElementById("crm-msg-files-list");
+  list.innerHTML = "";
+  crmMsgFiles.forEach(function (file, idx) {
+    var chip = document.createElement("span");
+    chip.style.cssText = "display:inline-flex;align-items:center;gap:6px;background:var(--n-100);border-radius:999px;padding:4px 10px;font-size:11px";
+    chip.innerHTML = "<span>" + file.name + " (" + (file.size / 1024).toFixed(0) + "KB)</span>";
+    var removeBtn = document.createElement("button");
+    removeBtn.type = "button";
+    removeBtn.textContent = "×";
+    removeBtn.style.cssText = "border:none;background:none;cursor:pointer;font-size:14px;color:var(--n-500);line-height:1";
+    removeBtn.addEventListener("click", function () {
+      crmMsgFiles.splice(idx, 1);
+      renderCrmMsgFileChips();
+    });
+    chip.appendChild(removeBtn);
+    list.appendChild(chip);
+  });
+}
+
+document.getElementById("crm-msg-files").addEventListener("change", function (e) {
+  crmMsgFiles = crmMsgFiles.concat(Array.from(e.target.files));
+  e.target.value = ""; // allow re-selecting the same file after removing it
+  renderCrmMsgFileChips();
+});
+
+function fileToBase64(file) {
+  return new Promise(function (resolve, reject) {
+    var reader = new FileReader();
+    reader.onload = function () {
+      // reader.result looks like "data:<mime>;base64,<data>" — Resend
+      // wants just the base64 part with no prefix.
+      var base64 = reader.result.split(",")[1];
+      resolve({ filename: file.name, content: base64 });
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
 document.getElementById("crm-message-btn").addEventListener("click", function () {
   document.getElementById("crm-message-count").textContent = Object.keys(crmSelected).length;
   document.getElementById("crm-msg-subject").value = "";
   document.getElementById("crm-msg-html").value = "";
   document.getElementById("crm-msg-status").textContent = "";
+  crmMsgFiles = [];
+  renderCrmMsgFileChips();
   document.getElementById("crm-message-form").style.display = "block";
   document.getElementById("crm-message-form").scrollIntoView({ behavior: "smooth", block: "nearest" });
 });
@@ -2614,12 +2716,17 @@ document.getElementById("crm-msg-send-btn").addEventListener("click", function (
   var ids = Object.keys(crmSelected);
   if (!ids.length) { status.style.color = "var(--err)"; status.textContent = "No clients selected."; return; }
   if (!subject || !html) { status.style.color = "var(--err)"; status.textContent = "Subject and message are required."; return; }
-  status.style.color = "var(--n-500)"; status.textContent = "Sending…";
+  status.style.color = "var(--n-500)";
+  status.textContent = crmMsgFiles.length ? "Preparing attachments…" : "Sending…";
 
-  fetch(API_BASE + "/api/admin/crm/message", {
-    method: "POST", headers: authHeaders(),
-    body: JSON.stringify({ clientIds: ids, subject: subject, html: html })
-  })
+  Promise.all(crmMsgFiles.map(fileToBase64))
+    .then(function (attachments) {
+      status.textContent = attachments.length ? "Sending (attachments make this slower — one email at a time)…" : "Sending…";
+      return fetch(API_BASE + "/api/admin/crm/message", {
+        method: "POST", headers: authHeaders(),
+        body: JSON.stringify({ clientIds: ids, subject: subject, html: html, attachments: attachments })
+      });
+    })
     .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
     .then(function (r) {
       if (!r.ok) { status.style.color = "var(--err)"; status.textContent = r.data.error || "Could not send."; return; }
@@ -2782,6 +2889,75 @@ document.getElementById("qf-add-btn").addEventListener("click", function () {
       loadQFields(); loadQTemplates();
     })
     .catch(function () { status.textContent = "Couldn't reach the server."; });
+});
+
+// ---------- promo codes ----------
+function loadPromoCodes() {
+  var tbody = document.getElementById("promo-tbody");
+  tbody.innerHTML = "<tr><td colspan='6'>Loading…</td></tr>";
+  fetch(API_BASE + "/api/admin/promo-codes", { headers: authHeaders() })
+    .then(function (res) { return res.json(); })
+    .then(function (codes) {
+      if (!codes.length) { tbody.innerHTML = "<tr><td colspan='6'>No promo codes yet.</td></tr>"; return; }
+      tbody.innerHTML = "";
+      codes.forEach(function (p) { tbody.appendChild(renderPromoRow(p)); });
+    })
+    .catch(function () { tbody.innerHTML = "<tr><td colspan='6'>Couldn't load promo codes.</td></tr>"; });
+}
+
+function renderPromoRow(p) {
+  var tr = document.createElement("tr");
+  var discountLabel = p.discountType === "percent" ? p.discountValue + "% off" : "£" + p.discountValue + " off";
+  var usedLabel = p.usedCount + (p.maxUses !== null ? " / " + p.maxUses : "");
+  tr.innerHTML =
+    "<td><b>" + p.code + "</b></td>" +
+    "<td>" + discountLabel + "</td>" +
+    "<td>" + usedLabel + "</td>" +
+    "<td>" + (p.expiresAt || "—") + "</td>" +
+    "<td><input type='checkbox' class='promo-active-toggle'" + (p.active ? " checked" : "") + "></td>" +
+    "<td><button class='btn btn-secondary promo-delete-btn' type='button' style='min-height:28px;padding:0 10px;font-size:11px;color:var(--err)'>Delete</button></td>";
+
+  tr.querySelector(".promo-active-toggle").addEventListener("change", function (e) {
+    fetch(API_BASE + "/api/admin/promo-codes/" + p.id, {
+      method: "PUT", headers: authHeaders(), body: JSON.stringify({ active: e.target.checked })
+    }).catch(function () { alert("Couldn't reach the server."); });
+  });
+
+  tr.querySelector(".promo-delete-btn").addEventListener("click", function () {
+    if (!confirm('Delete code "' + p.code + '"? Applications that already used it keep their discount — this only stops future use.')) return;
+    fetch(API_BASE + "/api/admin/promo-codes/" + p.id, { method: "DELETE", headers: authHeaders() })
+      .then(function () { loadPromoCodes(); })
+      .catch(function () { alert("Couldn't reach the server."); });
+  });
+
+  return tr;
+}
+
+document.getElementById("promo-add-btn").addEventListener("click", function () {
+  var status = document.getElementById("promo-add-status");
+  var body = {
+    code: document.getElementById("promo-new-code").value.trim().toUpperCase(),
+    discountType: document.getElementById("promo-new-type").value,
+    discountValue: Number(document.getElementById("promo-new-value").value),
+    maxUses: document.getElementById("promo-new-maxuses").value || null,
+    expiresAt: document.getElementById("promo-new-expires").value || null
+  };
+  if (!body.code) { status.textContent = "Enter a code."; return; }
+  if (!body.discountValue || body.discountValue <= 0) { status.textContent = "Enter a discount value greater than 0."; return; }
+  status.style.color = "var(--n-500)"; status.textContent = "Creating…";
+
+  fetch(API_BASE + "/api/admin/promo-codes", { method: "POST", headers: authHeaders(), body: JSON.stringify(body) })
+    .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
+    .then(function (r) {
+      if (!r.ok) { status.style.color = "var(--err)"; status.textContent = r.data.error || "Could not create."; return; }
+      status.textContent = "";
+      document.getElementById("promo-new-code").value = "";
+      document.getElementById("promo-new-value").value = "";
+      document.getElementById("promo-new-maxuses").value = "";
+      document.getElementById("promo-new-expires").value = "";
+      loadPromoCodes();
+    })
+    .catch(function () { status.style.color = "var(--err)"; status.textContent = "Couldn't reach the server."; });
 });
 
 </script>
