@@ -3470,6 +3470,23 @@ if (continueToPaymentBtn) {
   continueToPaymentBtn.addEventListener("click", function () { switchDetailTab("payment"); });
 }
 
+// Clicking "Pay now" disables the button and changes its text right before
+// redirecting to Stripe. If the person then hits the browser's Back
+// button, some browsers restore the page from cache exactly as it was
+// left — including that disabled button — without re-running any of our
+// code. This catches that specific case and puts the buttons back to a
+// normal, clickable state.
+window.addEventListener("pageshow", function (e) {
+  if (!e.persisted) return;
+  var payBtn = document.getElementById("pay-now-btn");
+  if (payBtn) { payBtn.disabled = false; payBtn.textContent = "Pay now"; }
+  var skipBtn = document.getElementById("skip-docs-pay-btn");
+  if (skipBtn) { skipBtn.disabled = false; skipBtn.textContent = "Skip document review — pay now"; }
+  var applyBtn = document.getElementById("promo-apply-btn");
+  if (applyBtn) applyBtn.disabled = false;
+  if (currentChecklistApp) updatePaymentSection(currentChecklistApp);
+});
+
 var payNowBtn = document.getElementById("pay-now-btn");
 if (payNowBtn) {
   payNowBtn.addEventListener("click", function () {

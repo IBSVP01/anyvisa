@@ -1247,7 +1247,7 @@ if (!slug) {
       document.getElementById("post-crumb").textContent = post.title;
       var date = post.publishedAt ? new Date(post.publishedAt).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }) : "";
       article.innerHTML =
-        "<div class='note' style='font-size:13px;margin-bottom:8px'>" + date + (post.author ? " · " + post.author : "") + "</div>" +
+        "<div class='note' style='font-size:13px;margin-bottom:8px'>" + date + ((post.author && post.author.indexOf("@") === -1) ? " · " + post.author : "") + "</div>" +
         "<h1 style='margin-bottom:24px'>" + post.title + "</h1>" +
         "<div class='legal-copy'>" + post.content + "</div>";
     })
