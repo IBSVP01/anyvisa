@@ -2820,9 +2820,16 @@ function renderQField(f) {
     var body = {
       section: row.querySelector(".qf-section").value,
       label: row.querySelector(".qf-label").value,
-      options: row.querySelector(".qf-options").value.split("|").filter(Boolean),
       required: row.querySelector(".qf-required").checked
     };
+    // Repeater fields keep their sub-field structure in this same "options"
+    // slot — this simple row only has a plain pipe-separated text input, so
+    // sending it for a repeater would silently wipe the real structure.
+    // Editing a repeater's sub-fields isn't supported from this row; delete
+    // and re-add it instead if that's genuinely needed.
+    if (f.fieldType !== "repeater") {
+      body.options = row.querySelector(".qf-options").value.split("|").filter(Boolean);
+    }
     fetch(API_BASE + "/api/admin/questionnaire-fields/" + f.id, { method: "PUT", headers: authHeaders(), body: JSON.stringify(body) })
       .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
       .then(function (r) { if (!r.ok) alert(r.data.error || "Could not save."); })
