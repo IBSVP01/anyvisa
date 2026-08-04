@@ -2152,8 +2152,10 @@ function loadApplications() {
   var list = document.getElementById("applications-list");
   list.innerHTML = "<p class='note'>Loading…</p>";
   fetch(API_BASE + "/api/admin/applications", { headers: authHeaders() })
-    .then(function (res) { return res.json(); })
-    .then(function (apps) {
+    .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
+    .then(function (r) {
+      if (!r.ok) { list.innerHTML = "<p class='note' style='color:var(--err)'>" + (r.data.error || "Could not load applications.") + "</p>"; return; }
+      var apps = r.data;
       if (!apps.length) { list.innerHTML = "<p class='note'>No applications yet.</p>"; return; }
       list.innerHTML = "";
       apps.forEach(function (app) { list.appendChild(renderAppAdminCard(app)); });
