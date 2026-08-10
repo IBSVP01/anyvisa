@@ -1120,7 +1120,31 @@ footer a { color: var(--n-500); }
 .legal-copy p { margin-bottom: var(--s-4); }
 .legal-copy ul { margin: 0 0 var(--s-4) var(--s-5); }
 .legal-copy li { margin-bottom: var(--s-2); }
-.legal-copy a { color: var(--accent-orange); text-decoration: underline; }
+.legal-copy a { color: var(--accent-orange); text-decoration: underline; }.post-card {
+  position: relative; display: block; border-radius: var(--r-lg); overflow: hidden;
+  min-height: 340px; text-decoration: none; color: inherit;
+  background: linear-gradient(135deg, var(--brand), #6d28d9); /* shown while the image loads, and as a fallback if a post has none */
+}
+.post-card img {
+  position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
+  transition: transform 0.35s ease;
+}
+.post-card:hover img { transform: scale(1.04); }
+.post-card::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0.35) 45%, rgba(0,0,0,0) 70%);
+}
+.post-card .body { position: absolute; left: 0; right: 0; bottom: 0; padding: var(--s-5); z-index: 1; }
+.post-card h2 { color: #fff; font-size: 22px; line-height: 1.25; margin: 0 0 var(--s-3); }
+.post-card .meta { display: flex; align-items: center; gap: 10px; }
+.post-card .cat-pill {
+  display: inline-block; background: #ffd166; color: #4a3200; font-weight: 700; font-size: 11.5px;
+  letter-spacing: 0.02em; text-transform: uppercase; padding: 5px 12px; border-radius: 999px;
+}
+.post-card .read-time { color: #f1ecff; font-size: 13px; font-weight: 600; }
+#blog-post-list { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
+@media (max-width: 640px) { .post-card { min-height: 280px; } }
+
 </style>
 </head>
 <body>
@@ -1238,13 +1262,16 @@ fetch(API_BASE + "/api/blog")
     var list = document.getElementById("blog-post-list");
     if (!posts.length) { list.innerHTML = "<p class='note'>No posts yet — check back soon.</p>"; return; }
     list.innerHTML = posts.map(function (p) {
-      var date = p.publishedAt ? new Date(p.publishedAt).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }) : "";
-      return "<article class='admin-table' style='padding:24px'>" +
-        "<div class='note' style='font-size:12px;margin-bottom:6px'>" + date + "</div>" +
-        "<h2 style='font-size:22px;margin-bottom:8px'><a href='blog-post.html?slug=" + encodeURIComponent(p.slug) + "' style='color:var(--n-900);text-decoration:none'>" + p.title + "</a></h2>" +
-        "<p class='hint' style='margin:0 0 12px'>" + (p.summary || "") + "</p>" +
-        "<a href='blog-post.html?slug=" + encodeURIComponent(p.slug) + "'>Read more →</a>" +
-        "</article>";
+      var href = "blog-post.html?slug=" + encodeURIComponent(p.slug);
+      var img = p.coverImage ? "<img src='" + p.coverImage + "' alt='' loading='lazy' onerror='this.remove()'>" : "";
+      var catPill = p.category ? "<span class='cat-pill'>" + p.category + "</span>" : "";
+      return "<a class='post-card' href='" + href + "'>" +
+        img +
+        "<div class='body'>" +
+        "<h2>" + p.title + "</h2>" +
+        "<div class='meta'>" + catPill + "<span class='read-time'>" + p.readTime + " min read</span></div>" +
+        "</div>" +
+        "</a>";
     }).join("");
   })
   .catch(function () {

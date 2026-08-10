@@ -1520,6 +1520,17 @@ footer a { color: var(--n-500); }
             <label for="post-slug">URL slug (leave blank to auto-generate from title)</label>
             <input type="text" id="post-slug" placeholder="e.g. schengen-visa-tips-2026">
           </div>
+          <div style="display:grid;grid-template-columns:2fr 1fr;gap:var(--s-3);margin-top:var(--s-3)">
+            <div class="auth-field" style="margin:0">
+              <label for="post-cover-image">Cover image URL — shown full-bleed on the "Keep reading" card</label>
+              <input type="text" id="post-cover-image" placeholder="https://…">
+            </div>
+            <div class="auth-field" style="margin:0">
+              <label for="post-category">Category badge</label>
+              <input type="text" id="post-category" placeholder="e.g. GUIDES">
+            </div>
+          </div>
+          <img id="post-cover-preview" style="display:none;margin-top:8px;max-height:120px;border-radius:10px;border:1px solid var(--n-200)">
           <div class="auth-field" style="margin:var(--s-3) 0 0">
             <label for="post-summary">Summary (shown on the blog listing page)</label>
             <input type="text" id="post-summary">
@@ -2105,15 +2116,26 @@ function openPostEditor(post) {
   document.getElementById("blog-editor-title").textContent = post ? "Edit post" : "New post";
   document.getElementById("post-title").value = post ? post.title : "";
   document.getElementById("post-slug").value = post ? post.slug : "";
+  document.getElementById("post-cover-image").value = post ? (post.coverImage || "") : "";
+  document.getElementById("post-category").value = post ? (post.category || "") : "";
   document.getElementById("post-summary").value = post ? post.summary : "";
   document.getElementById("post-content").value = post ? post.content : "";
   document.getElementById("post-meta-title").value = post ? post.metaTitle : "";
   document.getElementById("post-meta-description").value = post ? post.metaDescription : "";
   document.getElementById("post-status").value = post ? post.status : "draft";
   document.getElementById("post-save-status").textContent = "";
+  updateCoverPreview();
   document.getElementById("blog-editor").style.display = "block";
   document.getElementById("blog-editor").scrollIntoView({ behavior: "smooth", block: "start" });
 }
+
+function updateCoverPreview() {
+  var url = document.getElementById("post-cover-image").value.trim();
+  var img = document.getElementById("post-cover-preview");
+  if (url) { img.src = url; img.style.display = "block"; } else { img.style.display = "none"; }
+}
+document.getElementById("post-cover-image").addEventListener("input", updateCoverPreview);
+document.getElementById("post-cover-preview").addEventListener("error", function () { this.style.display = "none"; });
 
 document.getElementById("new-post-btn").addEventListener("click", function () { openPostEditor(null); });
 document.getElementById("cancel-post-btn").addEventListener("click", function () {
@@ -2125,6 +2147,8 @@ document.getElementById("save-post-btn").addEventListener("click", function () {
   var body = {
     title: document.getElementById("post-title").value.trim(),
     slug: document.getElementById("post-slug").value.trim(),
+    coverImage: document.getElementById("post-cover-image").value.trim(),
+    category: document.getElementById("post-category").value.trim(),
     summary: document.getElementById("post-summary").value.trim(),
     content: document.getElementById("post-content").value.trim(),
     metaTitle: document.getElementById("post-meta-title").value.trim(),
