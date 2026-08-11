@@ -970,7 +970,7 @@ footer a { color: var(--n-500); }
   background: #fff; border: 1px solid var(--n-200); border-radius: var(--r); margin-bottom: var(--s-3); overflow: hidden;
 }
 .app-admin-head {
-  display: grid; grid-template-columns: 1fr auto auto auto; gap: var(--s-4); align-items: center;
+  display: grid; grid-template-columns: 1fr auto auto auto auto; gap: var(--s-4); align-items: center;
   padding: var(--s-4); cursor: pointer;
 }
 .app-admin-head .who { font-weight: 700; color: var(--n-900); font-size: var(--fs-sm); }
@@ -2205,6 +2205,7 @@ function renderAppAdminCard(app) {
     "<div class='doc'>" + app.country + " · " + app.purpose + " · " + app.travelers + " traveler(s) · created " + app.createdAt + "</div></div>" +
     "<span class='q-badge " + qClass + "'>" + qLabel + "</span>" +
     "<span class='book-badge " + bClass + "'>" + bLabel + "</span>" +
+    "<button type='button' class='btn btn-secondary admin-delete-app-btn' style='color:var(--err);border-color:var(--err);min-height:32px;padding:0 12px;font-size:12px'>Delete</button>" +
     "<span style='color:var(--n-400);font-weight:700'>▾</span>" +
     "</div>" +
     "<div class='app-admin-body' id='body-" + app.id + "'></div>";
@@ -2219,6 +2220,19 @@ function renderAppAdminCard(app) {
       renderAppAdminBody(app, body);
     }
   });
+
+  card.querySelector(".admin-delete-app-btn").addEventListener("click", function (e) {
+    e.stopPropagation();
+    if (!confirm("Delete this application permanently? This removes it from the customer's account too, along with their documents and questionnaire answers — it can't be undone.")) return;
+    fetch(API_BASE + "/api/admin/applications/" + app.id, { method: "DELETE", headers: authHeaders() })
+      .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
+      .then(function (r) {
+        if (!r.ok) { alert(r.data.error || "Could not delete this application."); return; }
+        card.remove();
+      })
+      .catch(function () { alert("Couldn't reach the server."); });
+  });
+
   return card;
 }
 
