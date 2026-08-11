@@ -893,10 +893,13 @@ footer a { color: var(--n-500); }
 }
 @media (prefers-reduced-motion: reduce) { .marquee-track { animation: none; } }
 .marquee-track .client {
-  display: flex; align-items: center; gap: var(--s-2); flex-shrink: 0;
-  font-weight: 700; font-size: var(--fs-md); color: var(--n-300); white-space: nowrap;
+  display: flex; align-items: center; flex-shrink: 0;
 }
-.marquee-track .client .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--n-300); }
+.marquee-track .client img {
+  height: 40px; width: auto; max-width: 120px; object-fit: contain;
+  filter: grayscale(100%); opacity: 0.55; transition: filter 0.2s, opacity 0.2s;
+}
+.marquee-track .client img:hover { filter: grayscale(0%); opacity: 1; }
 @keyframes marquee-scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 .marquee-wrap::before, .marquee-wrap::after {
   content: ""; position: absolute; top: 0; bottom: 0; width: 80px; z-index: 2; pointer-events: none;
@@ -1486,16 +1489,16 @@ footer a { color: var(--n-500); }
     <div class="marquee-wrap">
       <div class="marquee-label">Our clients</div>
       <div class="marquee-track">
-        <span class="client"><span class="dot"></span>Chelsea FC</span>
-        <span class="client"><span class="dot"></span>West Ham United</span>
-        <span class="client"><span class="dot"></span>Arsenal FC</span>
-        <span class="client"><span class="dot"></span>Tottenham Hotspur</span>
-        <span class="client"><span class="dot"></span>Sunderland AFC</span>
-        <span class="client"><span class="dot"></span>Chelsea FC</span>
-        <span class="client"><span class="dot"></span>West Ham United</span>
-        <span class="client"><span class="dot"></span>Arsenal FC</span>
-        <span class="client"><span class="dot"></span>Tottenham Hotspur</span>
-        <span class="client"><span class="dot"></span>Sunderland AFC</span>
+        <span class="client"><img src="logos/chelsea-fc.png" alt="Chelsea FC"></span>
+        <span class="client"><img src="logos/west-ham-united.png" alt="West Ham United"></span>
+        <span class="client"><img src="logos/arsenal-fc.png" alt="Arsenal FC"></span>
+        <span class="client"><img src="logos/tottenham-hotspur.png" alt="Tottenham Hotspur"></span>
+        <span class="client"><img src="logos/sunderland-afc.png" alt="Sunderland AFC"></span>
+        <span class="client"><img src="logos/chelsea-fc.png" alt="Chelsea FC"></span>
+        <span class="client"><img src="logos/west-ham-united.png" alt="West Ham United"></span>
+        <span class="client"><img src="logos/arsenal-fc.png" alt="Arsenal FC"></span>
+        <span class="client"><img src="logos/tottenham-hotspur.png" alt="Tottenham Hotspur"></span>
+        <span class="client"><img src="logos/sunderland-afc.png" alt="Sunderland AFC"></span>
       </div>
     </div>
   </div>
@@ -3022,7 +3025,7 @@ function openDocumentChecklist(application) {
           credentials: "include", headers: { "Authorization": "Bearer " + authToken } })
     .then(function (res) { return res.json(); })
     .then(function (q) {
-      renderQuestionnaireFields(q.fields, qContainer);
+      renderQuestionnaireFields(q.fields, qContainer, application.countryId);
       updateQuestCompleteBadge(q.complete);
       showMissingFieldsNotice(q.fields);
     });
@@ -3031,7 +3034,7 @@ function openDocumentChecklist(application) {
   checklist.innerHTML = "<p class='note'>Loading document requirements…</p>";
 
   Promise.all([
-    fetch(API_BASE + "/api/countries/" + application.countryId + "/documents?purpose=" + encodeURIComponent(application.purpose || ""), { credentials: "include" })
+    fetch(API_BASE + "/api/countries/" + application.countryId + "/documents?purpose=" + encodeURIComponent(application.purpose || "") + "&applicationId=" + encodeURIComponent(application.id), { credentials: "include" })
       .then(function (res) { return res.ok ? res.json() : []; })
       .catch(function () { return []; }),
     fetch(API_BASE + "/api/documents?applicationId=" + application.id, {
@@ -3052,7 +3055,31 @@ function openDocumentChecklist(application) {
 // plus "info" (a static notice, no input) and conditional fields that only
 // show once their parent question has the matching answer (e.g. a "give
 // details" field that appears only after answering "Yes" to a yes/no question).
-function renderQuestionnaireFields(fields, container) {
+// Minimum number of days from today before a "date of entry" can be
+// selected, per destination country — consulates/portals won't take a
+// booking any sooner than this, so there's no point letting someone pick
+// an earlier date and then get stuck.
+var SCHENGEN_COUNTRY_IDS = ["austria","belgium","croatia","czech-republic","denmark","estonia","finland","france","germany","greece","hungary","iceland","italy","latvia","liechtenstein","lithuania","luxembourg","malta","netherlands","norway","poland","portugal","slovakia","slovenia","spain","sweden","switzerland"];
+// The field key that represents "date of entry" differs per questionnaire template.
+var ENTRY_DATE_FIELD_KEYS = ["sch_entry_date", "entry_date", "intended_entry_date", "arrival_date", "date_of_entry", "intended_arrival_date"];
+
+function minLeadDaysForCountry(countryId) {
+  if (countryId === "france") return 45;
+  if (["russia", "saudi-arabia", "nigeria", "china", "angola"].indexOf(countryId) !== -1) return 4;
+  if (countryId === "usa") return 21;
+  if (SCHENGEN_COUNTRY_IDS.indexOf(countryId) !== -1) return 21; // every other Schengen state
+  return null; // no minimum configured for this destination
+}
+
+function minEntryDateStr(countryId) {
+  var days = minLeadDaysForCountry(countryId);
+  if (days === null) return null;
+  var d = new Date();
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+function renderQuestionnaireFields(fields, container, countryId) {
   container.innerHTML = "";
   var grid = document.createElement("div");
   grid.style.display = "grid";
@@ -3248,6 +3275,10 @@ function renderQuestionnaireFields(fields, container) {
     } else {
       input = document.createElement("input");
       input.type = f.type === "date" ? "date" : "text";
+      if (f.type === "date" && ENTRY_DATE_FIELD_KEYS.indexOf(f.key) !== -1) {
+        var minStr = minEntryDateStr(countryId);
+        if (minStr) input.min = minStr;
+      }
     }
     input.id = "qf-" + f.key;
     input.dataset.key = f.key;
@@ -3491,7 +3522,7 @@ function updatePaymentSection(application) {
   // reject it (e.g. a document whose AI review errored out never got saved
   // at all).
   Promise.all([
-    fetch(API_BASE + "/api/countries/" + application.countryId + "/documents?purpose=" + encodeURIComponent(application.purpose || ""), { credentials: "include" })
+    fetch(API_BASE + "/api/countries/" + application.countryId + "/documents?purpose=" + encodeURIComponent(application.purpose || "") + "&applicationId=" + encodeURIComponent(application.id), { credentials: "include" })
       .then(function (res) { return res.ok ? res.json() : []; }).catch(function () { return []; }),
     fetch(API_BASE + "/api/documents?applicationId=" + application.id, {
       credentials: "include", headers: { "Authorization": "Bearer " + authToken }
