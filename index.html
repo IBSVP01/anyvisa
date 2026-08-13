@@ -478,6 +478,7 @@ h2 {
 .step {
   background: var(--white); border: 1px solid var(--n-200); border-radius: var(--r);
   padding: var(--s-5); position: relative;
+  display: flex; flex-direction: column;
 }
 .step::before {
   counter-increment: step; content: counter(step);
@@ -485,12 +486,13 @@ h2 {
   width: 32px; height: 32px; border-radius: 50%;
   background: var(--n-100); color: var(--n-700);
   font-weight: 700; font-size: var(--fs-sm); margin-bottom: var(--s-4);
+  flex-shrink: 0;
 }
 .step.final::before { content: "✓"; background: var(--ok-tint); color: var(--ok); }
 .step h3 { font-size: var(--fs-base); font-weight: 700; color: var(--n-900); margin-bottom: var(--s-2); letter-spacing: -0.01em; }
 .step p { font-size: var(--fs-sm); color: var(--n-500); line-height: 1.55; }
 .step .meta {
-  display: inline-flex; align-items: center; gap: 6px; margin-top: var(--s-3);
+  display: inline-flex; align-items: center; gap: 6px; margin-top: auto; align-self: flex-start;
   font-size: var(--fs-xs); font-weight: 600; color: var(--n-500);
   background: var(--n-100); border-radius: 4px; padding: 4px 8px;
 }
