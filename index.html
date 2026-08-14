@@ -1261,6 +1261,17 @@ footer a { color: var(--n-500); }
 .legal-copy ul { margin: 0 0 var(--s-4) var(--s-5); }
 .legal-copy li { margin-bottom: var(--s-2); }
 .legal-copy a { color: var(--accent-orange); text-decoration: underline; }
+.save-toast {
+  position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-20px);
+  background: var(--n-900); color: #fff; padding: 12px 22px; border-radius: 999px;
+  font-size: var(--fs-sm); font-weight: 600; box-shadow: var(--shadow-3); z-index: 999;
+  display: flex; align-items: center; gap: 8px;
+  opacity: 0; pointer-events: none; transition: opacity 0.25s ease, transform 0.25s ease;
+}
+.save-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.save-toast.error { background: var(--err); }
+.save-toast .ic { width: 16px; height: 16px; flex-shrink: 0; }
+@media (max-width: 640px) { .save-toast { top: auto; bottom: 20px; } }
 </style>
 </head>
 <body>
@@ -2846,6 +2857,19 @@ function loadMyApplications() {
 // right after creating a new one, and when reopening an existing one from
 // "Upload documents" in the list. Fetches any documents already uploaded so
 // re-opening doesn't reset progress back to blank "Upload" buttons.
+// A save confirmation that's actually hard to miss — a small floating
+// banner at the top of the screen, not just quiet text next to the button.
+var saveToastTimer = null;
+function showSaveToast(message, isError) {
+  var toast = document.getElementById("save-toast");
+  if (!toast) return;
+  toast.textContent = (isError ? "" : "✓ ") + message;
+  toast.classList.toggle("error", !!isError);
+  toast.classList.add("show");
+  clearTimeout(saveToastTimer);
+  saveToastTimer = setTimeout(function () { toast.classList.remove("show"); }, isError ? 3500 : 2200);
+}
+
 var currentChecklistApp = null;
 
 // ---------- list view <-> detail view ("folders") ----------
@@ -3456,8 +3480,9 @@ if (tripSaveBtn) {
     })
       .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
       .then(function (r) {
-        if (!r.ok) { status.textContent = r.data.error || "Could not save."; status.style.color = "var(--err)"; return; }
+        if (!r.ok) { status.textContent = r.data.error || "Could not save."; status.style.color = "var(--err)"; showSaveToast(r.data.error || "Could not save.", true); return; }
         status.style.color = "var(--ok)"; status.textContent = "Saved.";
+        showSaveToast("Trip details saved");
         currentChecklistApp = r.data;
         document.getElementById("nab-route").textContent =
           r.data.country + " · " + r.data.purpose + " visa · " + r.data.travelers + " traveler" + (r.data.travelers > 1 ? "s" : "");
@@ -3478,8 +3503,9 @@ if (tripSaveBtn) {
     })
       .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
       .then(function (r) {
-        if (!r.ok) { status.textContent = r.data.error || "Could not save."; status.style.color = "var(--err)"; return false; }
+        if (!r.ok) { status.textContent = r.data.error || "Could not save."; status.style.color = "var(--err)"; showSaveToast(r.data.error || "Could not save.", true); return false; }
         status.style.color = "var(--ok)"; status.textContent = "Saved.";
+        showSaveToast("Application form saved");
         updateQuestCompleteBadge(r.data.complete);
         showMissingFieldsNotice(r.data.fields);
         if (currentChecklistApp) updatePaymentSection(currentChecklistApp);
@@ -4587,5 +4613,6 @@ if (wizOverlay) {
   }
 }
 </script>
+  <div id="save-toast" class="save-toast"></div>
 </body>
 </html>
