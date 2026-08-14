@@ -3172,12 +3172,13 @@ function openDocumentChecklist(application) {
 // an earlier date and then get stuck.
 var SCHENGEN_COUNTRY_IDS = ["austria","belgium","croatia","czech-republic","denmark","estonia","finland","france","germany","greece","hungary","iceland","italy","latvia","liechtenstein","lithuania","luxembourg","malta","netherlands","norway","poland","portugal","slovakia","slovenia","spain","sweden","switzerland"];
 // The field key that represents "date of entry" differs per questionnaire template.
-var ENTRY_DATE_FIELD_KEYS = ["sch_entry_date", "entry_date", "intended_entry_date", "arrival_date", "date_of_entry", "intended_arrival_date"];
+var ENTRY_DATE_FIELD_KEYS = ["sch_entry_date", "entry_date", "intended_entry_date", "arrival_date", "date_of_entry", "intended_arrival_date", "ire_entry_date"];
 
 function minLeadDaysForCountry(countryId) {
   if (countryId === "france") return 45;
   if (["russia", "saudi-arabia", "nigeria", "china", "angola"].indexOf(countryId) !== -1) return 4;
   if (countryId === "usa") return 21;
+  if (countryId === "ireland") return 14;
   if (SCHENGEN_COUNTRY_IDS.indexOf(countryId) !== -1) return 21; // every other Schengen state
   return null; // no minimum configured for this destination
 }
