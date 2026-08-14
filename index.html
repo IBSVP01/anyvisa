@@ -1864,6 +1864,10 @@ footer a { color: var(--n-500); }
           <p class="hint" id="doc-checklist-hint" style="margin:var(--s-4) 0">Upload these documents to keep your application moving. Our AI checks each one in minutes.</p>
           <div id="doc-checklist"></div>
 
+          <div class="admin-table" id="client-doc-note-card" style="padding:var(--s-4) var(--s-5);margin:var(--s-4) 0;background:#fdf3e0;border-color:#f3e0b8;display:none">
+            <p class="note" style="margin:0;color:var(--n-800)"><b>A note about your application:</b> <span id="client-doc-note-text"></span></p>
+          </div>
+
           <div class="admin-table" style="padding:var(--s-4) var(--s-5);margin:var(--s-4) 0;background:var(--n-50)">
             <p class="note" style="margin:0"><b>Don't forget to bring:</b> your checklist, a printed share code, and a screenshot of your status from the GOV.uk website.</p>
           </div>
@@ -3065,6 +3069,15 @@ function openDocumentChecklist(application) {
   currentChecklistApp = application;
   updateSlotOnlyUI(application);
   checkForMinorApplicant(application.id);
+
+  var noteCard = document.getElementById("client-doc-note-card");
+  if (application.clientDocNote && application.clientDocNote.trim()) {
+    document.getElementById("client-doc-note-text").textContent = application.clientDocNote;
+    noteCard.style.display = "block";
+  } else {
+    noteCard.style.display = "none";
+  }
+
   var route = application.country + " · " + application.purpose + " visa";
   document.getElementById("nab-ref").textContent = "AV-" + application.id.slice(0, 8);
   document.getElementById("nab-route").textContent =
@@ -4406,13 +4419,16 @@ if (wizOverlay) {
     });
   });
 
-  document.querySelectorAll(".city-card").forEach(function (card) {
-    card.addEventListener("click", function () {
-      document.querySelectorAll(".city-card").forEach(function (c) { c.classList.remove("active"); });
+  var wizCityGrid = document.getElementById("wiz-city-grid");
+  if (wizCityGrid) {
+    wizCityGrid.addEventListener("click", function (e) {
+      var card = e.target.closest(".city-card");
+      if (!card) return;
+      wizCityGrid.querySelectorAll(".city-card").forEach(function (c) { c.classList.remove("active"); });
       card.classList.add("active");
       wizState.city = card.dataset.city;
     });
-  });
+  }
 
   // ---------- calendar ----------
   var MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
@@ -4555,7 +4571,7 @@ if (wizOverlay) {
         headers: { "Content-Type": "application/json", "Authorization": "Bearer " + authToken },
         body: JSON.stringify({
           countryId: destInfo.id, purpose: wizState.purpose, travelers: wizState.travelers,
-          departureDate: wizState.departure, returnDate: wizState.return
+          departureDate: wizState.departure, returnDate: wizState.return, submissionCity: wizState.city || null
         })
       })
         .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, status: res.status, data: data }; }); })
@@ -4611,6 +4627,23 @@ if (wizOverlay) {
         : "Continue";
     }
     if (wizState.step === 5) updateCalSummary();
+    if (wizState.step === 4) renderWizCityGrid();
+  }
+
+  // Which submission cities are offered depends on the destination — the
+  // US only has an Embassy (London) and a Consulate (Belfast) serving UK
+  // applicants, unlike the generic set used for everything else.
+  var DEFAULT_CITIES = ["London", "Manchester", "Edinburgh"];
+  var USA_CITIES = ["London", "Belfast"];
+  function renderWizCityGrid() {
+    var grid = document.getElementById("wiz-city-grid");
+    if (!grid) return;
+    var destInfo = DEST[wizState.destination];
+    var cities = (destInfo && destInfo.id === "usa") ? USA_CITIES : DEFAULT_CITIES;
+    if (cities.indexOf(wizState.city) === -1) wizState.city = cities[0];
+    grid.innerHTML = cities.map(function (city) {
+      return "<div class='purpose-card city-card" + (city === wizState.city ? " active" : "") + "' data-city='" + city + "'><div class='t'>" + city + "</div></div>";
+    }).join("");
   }
 }
 </script>

@@ -2218,7 +2218,7 @@ function renderAppAdminCard(app) {
   card.innerHTML =
     "<div class='app-admin-head'>" +
     "<div><div class='who'>" + app.userEmail + " (" + (app.userName || "no name") + ")</div>" +
-    "<div class='doc'>" + app.country + " · " + app.purpose + " · " + app.travelers + " traveler(s) · created " + app.createdAt + "</div></div>" +
+    "<div class='doc'>" + app.country + " · " + app.purpose + " · " + app.travelers + " traveler(s)" + (app.submissionCity ? " · submitting in " + app.submissionCity : "") + " · created " + app.createdAt + "</div></div>" +
     "<span class='q-badge " + qClass + "'>" + qLabel + "</span>" +
     "<span class='book-badge " + bClass + "'>" + bLabel + "</span>" +
     "<button type='button' class='btn btn-secondary admin-delete-app-btn' style='color:var(--err);border-color:var(--err);min-height:32px;padding:0 12px;font-size:12px'>Delete</button>" +
@@ -2295,6 +2295,8 @@ function renderAppAdminBody(app, body) {
         "</div>" +
         "<div class='auth-field' style='margin-top:var(--s-3)'><label>Internal notes (not shown to customer)</label>" +
         "<input type='text' class='booking-notes' value='" + (app.bookingNotes || "").replace(/"/g, "&quot;") + "' placeholder='" + (isEvisa ? "e.g. Approved, visa emailed to client 03/08" : "e.g. Booked via TLS portal, ref #12345") + "'></div>" +
+        "<div class='auth-field' style='margin-top:var(--s-3)'><label>Note for this customer — shown to them under their document checklist</label>" +
+        "<textarea class='client-doc-note' rows='2' placeholder='e.g. Since your last visa was refused, please also upload a short cover letter explaining your travel history.' style='width:100%;padding:10px 12px;font-family:var(--font);font-size:13px;border:1px solid var(--n-300);border-radius:8px'>" + (app.clientDocNote || "").replace(/</g, "&lt;") + "</textarea></div>" +
         "<h4 style='font-size:var(--fs-sm);font-weight:700;margin:var(--s-5) 0 var(--s-3);color:var(--n-700)'>Documents</h4>" +
         "<div class='admin-docs-list'><p class='note'>Loading…</p></div>";
 
@@ -2314,6 +2316,7 @@ function renderAppAdminBody(app, body) {
           body: JSON.stringify({
             bookingStatus: body.querySelector(".booking-status").value,
             bookingNotes: body.querySelector(".booking-notes").value,
+            clientDocNote: body.querySelector(".client-doc-note").value,
             appointmentAt: appointmentAt
           })
         })
