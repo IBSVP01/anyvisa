@@ -1789,16 +1789,16 @@ footer a { color: var(--n-500); }
 
         <div data-detail-panel="form">
           <div class="admin-table" id="slot-only-card" style="padding:var(--s-5);margin:var(--s-4) 0;background:var(--n-50)">
-            <h3 style="font-size:var(--fs-base);margin-bottom:6px">Don't want to fill in the form?</h3>
-            <p class="note" style="margin:0 0 var(--s-3)">If this application is for a minor, or you'd simply rather skip the paperwork, we can just secure the appointment slot for you — no form, no documents, straight to payment.</p>
+            <h3 style="font-size:var(--fs-base);margin-bottom:6px">Don't want to fill in the full form?</h3>
+            <p class="note" style="margin:0 0 var(--s-3)">If this application is for a minor, or you'd simply rather skip the long paperwork, we just need a short set of basic details instead — no full questionnaire, no documents required.</p>
             <button class="btn btn-secondary" id="skip-to-slot-only-btn" type="button" style="min-height:38px;padding:0 16px">Skip the form — I only need the slot</button>
             <span id="slot-only-status" style="font-size:var(--fs-xs);color:var(--err);margin-left:var(--s-3)"></span>
           </div>
 
           <div class="admin-table" id="slot-only-active-card" style="padding:var(--s-5);margin:var(--s-4) 0;background:var(--brand-tint);display:none">
-            <h3 style="font-size:var(--fs-base);margin-bottom:6px">Slot-only — no form needed</h3>
-            <p class="note" style="margin:0 0 var(--s-3)">You've chosen to skip the questionnaire and documents. You can go straight to payment.</p>
-            <button class="btn btn-secondary" id="undo-slot-only-btn" type="button" style="min-height:36px;padding:0 14px">Actually, let me fill in the form</button>
+            <h3 style="font-size:var(--fs-base);margin-bottom:6px">Slot-only — short form</h3>
+            <p class="note" style="margin:0 0 var(--s-3)">You've chosen to skip the full questionnaire and documents — just fill in the short set of details below, then you can go straight to payment.</p>
+            <button class="btn btn-secondary" id="undo-slot-only-btn" type="button" style="min-height:36px;padding:0 14px">Actually, let me fill in the full form</button>
           </div>
 
           <div class="admin-table" style="padding:var(--s-5);margin:var(--s-4) 0">
@@ -2983,7 +2983,7 @@ function updateSlotOnlyUI(application) {
 
 document.getElementById("skip-to-slot-only-btn").addEventListener("click", function () {
   if (!currentChecklistApp) return;
-  if (!confirm("Skip the form and documents, and go straight to payment? You can still upload documents later if you change your mind, but the form itself won't be required.")) return;
+  if (!confirm("Skip the full form? You'll just need to fill in a short set of basic details instead — no documents required.")) return;
   var status = document.getElementById("slot-only-status");
   status.style.color = "var(--n-500)"; status.textContent = "Saving…";
   fetch(API_BASE + "/api/applications/" + currentChecklistApp.id + "/service-type", {
@@ -2994,9 +2994,8 @@ document.getElementById("skip-to-slot-only-btn").addEventListener("click", funct
     .then(function (r) {
       if (!r.ok) { status.style.color = "var(--err)"; status.textContent = r.data.error || "Could not save."; return; }
       currentChecklistApp.serviceType = "slot_only";
-      updateSlotOnlyUI(currentChecklistApp);
       status.textContent = "";
-      switchDetailTab("payment");
+      openDocumentChecklist(currentChecklistApp); // reloads the form panel — it now shows the short slot-only questions instead
     })
     .catch(function () { status.style.color = "var(--err)"; status.textContent = "Couldn't reach the server."; });
 });
@@ -3011,7 +3010,7 @@ document.getElementById("undo-slot-only-btn").addEventListener("click", function
     .then(function (r) {
       if (!r.ok) { alert(r.data.error || "Could not switch back."); return; }
       currentChecklistApp.serviceType = "full";
-      updateSlotOnlyUI(currentChecklistApp);
+      openDocumentChecklist(currentChecklistApp); // reloads the form panel — back to the full country questionnaire
     })
     .catch(function () { alert("Couldn't reach the server."); });
 });
