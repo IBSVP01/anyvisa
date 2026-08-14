@@ -1788,6 +1788,19 @@ footer a { color: var(--n-500); }
         </div>
 
         <div data-detail-panel="form">
+          <div class="admin-table" id="slot-only-card" style="padding:var(--s-5);margin:var(--s-4) 0;background:var(--n-50)">
+            <h3 style="font-size:var(--fs-base);margin-bottom:6px">Don't want to fill in the form?</h3>
+            <p class="note" style="margin:0 0 var(--s-3)">If this application is for a minor, or you'd simply rather skip the paperwork, we can just secure the appointment slot for you — no form, no documents, straight to payment.</p>
+            <button class="btn btn-secondary" id="skip-to-slot-only-btn" type="button" style="min-height:38px;padding:0 16px">Skip the form — I only need the slot</button>
+            <span id="slot-only-status" style="font-size:var(--fs-xs);color:var(--err);margin-left:var(--s-3)"></span>
+          </div>
+
+          <div class="admin-table" id="slot-only-active-card" style="padding:var(--s-5);margin:var(--s-4) 0;background:var(--brand-tint);display:none">
+            <h3 style="font-size:var(--fs-base);margin-bottom:6px">Slot-only — no form needed</h3>
+            <p class="note" style="margin:0 0 var(--s-3)">You've chosen to skip the questionnaire and documents. You can go straight to payment.</p>
+            <button class="btn btn-secondary" id="undo-slot-only-btn" type="button" style="min-height:36px;padding:0 14px">Actually, let me fill in the form</button>
+          </div>
+
           <div class="admin-table" style="padding:var(--s-5);margin:var(--s-4) 0">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--s-3)">
               <h3 style="font-size:var(--fs-base)">Trip details</h3>
@@ -1839,6 +1852,14 @@ footer a { color: var(--n-500); }
 
           <p class="hint" id="doc-checklist-hint" style="margin:var(--s-4) 0">Upload these documents to keep your application moving. Our AI checks each one in minutes.</p>
           <div id="doc-checklist"></div>
+
+          <div class="admin-table" style="padding:var(--s-4) var(--s-5);margin:var(--s-4) 0;background:var(--n-50)">
+            <p class="note" style="margin:0"><b>Don't forget to bring:</b> your checklist, a printed share code, and a screenshot of your status from the GOV.uk website.</p>
+          </div>
+          <div class="admin-table" id="minor-doc-note" style="padding:var(--s-4) var(--s-5);margin:var(--s-4) 0;background:var(--n-50);display:none">
+            <p class="note" style="margin:0"><b>Applying for a child:</b> you'll also need their birth certificate (translated into the destination country's language if it isn't already in English), copies of both parents' passports, and a signed sponsor letter from the parent(s).</p>
+          </div>
+
           <button class="btn btn-secondary" id="continue-to-payment" type="button" style="margin-top:var(--s-4)">Continue to payment →</button>
         </div>
 
@@ -2952,8 +2973,75 @@ if (createAppBtn) {
 }
 
 
+// ---------- slot-only (skip the form) ----------
+function updateSlotOnlyUI(application) {
+  var isSlotOnly = application.serviceType === "slot_only";
+  document.getElementById("slot-only-card").style.display = isSlotOnly ? "none" : "block";
+  document.getElementById("slot-only-active-card").style.display = isSlotOnly ? "block" : "none";
+  document.getElementById("slot-only-status").textContent = "";
+}
+
+document.getElementById("skip-to-slot-only-btn").addEventListener("click", function () {
+  if (!currentChecklistApp) return;
+  if (!confirm("Skip the form and documents, and go straight to payment? You can still upload documents later if you change your mind, but the form itself won't be required.")) return;
+  var status = document.getElementById("slot-only-status");
+  status.style.color = "var(--n-500)"; status.textContent = "Saving…";
+  fetch(API_BASE + "/api/applications/" + currentChecklistApp.id + "/service-type", {
+    method: "PUT", credentials: "include", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + authToken },
+    body: JSON.stringify({ serviceType: "slot_only" })
+  })
+    .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
+    .then(function (r) {
+      if (!r.ok) { status.style.color = "var(--err)"; status.textContent = r.data.error || "Could not save."; return; }
+      currentChecklistApp.serviceType = "slot_only";
+      updateSlotOnlyUI(currentChecklistApp);
+      status.textContent = "";
+      switchDetailTab("payment");
+    })
+    .catch(function () { status.style.color = "var(--err)"; status.textContent = "Couldn't reach the server."; });
+});
+
+document.getElementById("undo-slot-only-btn").addEventListener("click", function () {
+  if (!currentChecklistApp) return;
+  fetch(API_BASE + "/api/applications/" + currentChecklistApp.id + "/service-type", {
+    method: "PUT", credentials: "include", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + authToken },
+    body: JSON.stringify({ serviceType: "full" })
+  })
+    .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
+    .then(function (r) {
+      if (!r.ok) { alert(r.data.error || "Could not switch back."); return; }
+      currentChecklistApp.serviceType = "full";
+      updateSlotOnlyUI(currentChecklistApp);
+    })
+    .catch(function () { alert("Couldn't reach the server."); });
+});
+
+// Shows the "you'll also need a birth certificate / parents' passports /
+// sponsor letter" note in the Documents tab when the questionnaire's date
+// of birth indicates the applicant is under 18. Different templates use
+// different field keys for this, hence checking both known ones.
+function checkForMinorApplicant(applicationId) {
+  var note = document.getElementById("minor-doc-note");
+  fetch(API_BASE + "/api/applications/" + applicationId + "/questionnaire", { credentials: "include", headers: { "Authorization": "Bearer " + authToken } })
+    .then(function (res) { return res.ok ? res.json() : null; })
+    .then(function (data) {
+      if (!data || !data.fields) { note.style.display = "none"; return; }
+      var dobField = data.fields.find(function (f) { return f.key === "sch_dob" || f.key === "date_of_birth"; });
+      var dobValue = dobField && dobField.value;
+      if (!dobValue) { note.style.display = "none"; return; }
+      var dob = new Date(dobValue);
+      if (isNaN(dob.getTime())) { note.style.display = "none"; return; }
+      var ageMs = Date.now() - dob.getTime();
+      var age = Math.floor(ageMs / (365.25 * 24 * 60 * 60 * 1000));
+      note.style.display = age < 18 ? "block" : "none";
+    })
+    .catch(function () { note.style.display = "none"; });
+}
+
 function openDocumentChecklist(application) {
   currentChecklistApp = application;
+  updateSlotOnlyUI(application);
+  checkForMinorApplicant(application.id);
   var route = application.country + " · " + application.purpose + " visa";
   document.getElementById("nab-ref").textContent = "AV-" + application.id.slice(0, 8);
   document.getElementById("nab-route").textContent =

@@ -978,6 +978,7 @@ footer a { color: var(--n-500); }
 .q-badge { font-size: var(--fs-xs); font-weight: 700; padding: 4px 10px; border-radius: 999px; white-space: nowrap; }
 .q-badge.complete { background: var(--ok-tint); color: var(--ok); }
 .q-badge.incomplete { background: #fdf3e0; color: var(--warn); }
+.q-badge.slot-only { background: var(--brand-tint); color: var(--brand-active); }
 .book-badge { font-size: var(--fs-xs); font-weight: 700; padding: 4px 10px; border-radius: 999px; white-space: nowrap; }
 .book-badge.booked { background: var(--ok-tint); color: var(--ok); }
 .book-badge.not_booked { background: var(--n-100); color: var(--n-500); }
@@ -1250,8 +1251,8 @@ footer a { color: var(--n-500); }
           </div>
         </div>
         <table class="admin-table">
-          <thead><tr><th>Destination</th><th>Government fee</th><th>Service fee</th><th>E-visa?</th><th></th><th></th></tr></thead>
-          <tbody id="price-tbody"><tr><td colspan="5">Loading…</td></tr></tbody>
+          <thead><tr><th>Destination</th><th>Government fee</th><th>Service fee</th><th>E-visa?</th><th>Visible</th><th></th><th></th></tr></thead>
+          <tbody id="price-tbody"><tr><td colspan="6">Loading…</td></tr></tbody>
         </table>
         <div class="save-row" style="justify-content:space-between;align-items:center">
           <span id="price-status" style="font-size:var(--fs-xs);color:var(--n-500)"></span>
@@ -1818,15 +1819,15 @@ var countriesCache = [];
 
 function loadPricing() {
   var tbody = document.getElementById("price-tbody");
-  tbody.innerHTML = "<tr><td colspan='5'>Loading…</td></tr>";
-  fetch(API_BASE + "/api/countries")
+  tbody.innerHTML = "<tr><td colspan='6'>Loading…</td></tr>";
+  fetch(API_BASE + "/api/countries?includeHidden=1", { headers: authHeaders() })
     .then(function (res) { return res.json(); })
     .then(function (countries) {
       countriesCache = countries;
       renderPricingTable(countries);
     })
     .catch(function () {
-      tbody.innerHTML = "<tr><td colspan='5'>Couldn't load — server may be waking up, try refreshing.</td></tr>";
+      tbody.innerHTML = "<tr><td colspan='6'>Couldn't load — server may be waking up, try refreshing.</td></tr>";
     });
 }
 
@@ -1836,13 +1837,27 @@ function renderPricingTable(countries) {
   countries.forEach(function (c) {
     var tr = document.createElement("tr");
     tr.dataset.id = c.id;
+    if (c.isHidden) tr.style.opacity = "0.5";
     tr.innerHTML =
-      "<td>" + c.name + "</td>" +
+      "<td>" + c.name + (c.isHidden ? " <span style='font-size:11px;color:var(--n-500)'>(hidden)</span>" : "") + "</td>" +
       "<td>£<input type='number' class='fee-gov' value='" + c.governmentFee + "' min='0'></td>" +
       "<td>£<input type='number' class='fee-svc' value='" + c.serviceFee + "' min='0'></td>" +
       "<td>" + (c.isEvisa ? "Yes" : "No") + "</td>" +
+      "<td><button type='button' class='toggle-hidden-country' style='border:1px solid var(--n-300);background:#fff;border-radius:6px;padding:6px 12px;cursor:pointer;font-size:13px'>" + (c.isHidden ? "Show" : "Hide") + "</button></td>" +
       "<td><button type='button' class='manage-country' style='border:1px solid var(--n-300);background:#fff;border-radius:6px;padding:6px 12px;cursor:pointer;font-size:13px'>Manage</button></td>" +
       "<td><button type='button' class='delete-country' style='border:none;background:none;color:var(--err);cursor:pointer;font-size:13px'>Remove</button></td>";
+    tr.querySelector(".toggle-hidden-country").addEventListener("click", function () {
+      var nextHidden = !c.isHidden;
+      fetch(API_BASE + "/api/admin/countries/" + c.id, {
+        method: "PUT", headers: authHeaders(), body: JSON.stringify({ isHidden: nextHidden })
+      })
+        .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
+        .then(function (r) {
+          if (!r.ok) { alert(r.data.error || "Could not update visibility."); return; }
+          loadPricing();
+        })
+        .catch(function () { alert("Couldn't reach the server."); });
+    });
     tr.querySelector(".delete-country").addEventListener("click", function () {
       if (!confirm('Remove ' + c.name + '? This cannot be undone.')) return;
       fetch(API_BASE + "/api/admin/countries/" + c.id, { method: "DELETE", headers: authHeaders() })
@@ -2192,8 +2207,9 @@ function loadApplications() {
 function renderAppAdminCard(app) {
   var card = document.createElement("div");
   card.className = "app-admin-card";
-  var qClass = app.questionnaireComplete ? "complete" : "incomplete";
-  var qLabel = app.questionnaireComplete ? "Form complete" : "Form incomplete";
+  var isSlotOnly = app.serviceType === "slot_only";
+  var qClass = isSlotOnly ? "slot-only" : (app.questionnaireComplete ? "complete" : "incomplete");
+  var qLabel = isSlotOnly ? "Slot only — no form" : (app.questionnaireComplete ? "Form complete" : "Form incomplete");
   var bClass = app.bookingStatus === "booked" ? "booked" : "not_booked";
   var bLabel = app.isEvisa
     ? (app.bookingStatus === "booked" ? "Decision made" : "Pending")
