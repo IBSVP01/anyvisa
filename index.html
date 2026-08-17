@@ -3012,6 +3012,13 @@ if (createAppBtn) {
 
 // ---------- slot-only (skip the form) ----------
 function updateSlotOnlyUI(application) {
+  if (application.countryId === "usa") {
+    // USA's full form is already just the scheduling-account login —
+    // there's nothing shorter to skip to, so this option doesn't apply here.
+    document.getElementById("slot-only-card").style.display = "none";
+    document.getElementById("slot-only-active-card").style.display = "none";
+    return;
+  }
   var isSlotOnly = application.serviceType === "slot_only";
   document.getElementById("slot-only-card").style.display = isSlotOnly ? "none" : "block";
   document.getElementById("slot-only-active-card").style.display = isSlotOnly ? "block" : "none";
