@@ -3158,13 +3158,16 @@ function openDocumentChecklist(application) {
           credentials: "include", headers: { "Authorization": "Bearer " + authToken } })
     .then(function (res) { return res.json(); })
     .then(function (q) {
-      if (!q.fields.length && application.countryId === "usa") {
+      if (application.countryId === "usa") {
         qContainer.innerHTML =
-          "<div class='admin-table' style='padding:var(--s-5);background:var(--brand-tint)'>" +
-          "<h3 style='font-size:var(--fs-base);margin-bottom:6px'>No form to fill in here</h3>" +
-          "<p class='note' style='margin:0 0 var(--s-4)'>The US visa application (Form DS-160) has to be completed directly with the US government — we can't fill it in on your behalf. Once you've submitted it there, come back and upload your confirmation page under Documents.</p>" +
+          "<div class='admin-table' style='padding:var(--s-5);background:var(--brand-tint);margin-bottom:var(--s-4)'>" +
+          "<h3 style='font-size:var(--fs-base);margin-bottom:6px'>Don't forget your DS-160</h3>" +
+          "<p class='note' style='margin:0 0 var(--s-4)'>The US visa application (Form DS-160) has to be completed directly with the US government — we can't fill it in on your behalf. Once you've submitted it there, come back and upload your confirmation page under Documents. The details below are separate — just your login for the appointment scheduling system, so we can search for and secure your slot.</p>" +
           "<a class='btn btn-primary' href='https://ceac.state.gov/genniv/' target='_blank' rel='noopener' style='text-decoration:none'>Start your DS-160 on ceac.state.gov →</a>" +
           "</div>";
+        var usaFieldsWrap = document.createElement("div");
+        qContainer.appendChild(usaFieldsWrap);
+        renderQuestionnaireFields(q.fields, usaFieldsWrap, application.countryId);
       } else {
         renderQuestionnaireFields(q.fields, qContainer, application.countryId);
       }
@@ -3417,7 +3420,7 @@ function renderQuestionnaireFields(fields, container, countryId) {
       });
     } else {
       input = document.createElement("input");
-      input.type = f.type === "date" ? "date" : "text";
+      input.type = f.type === "date" ? "date" : f.type === "password" ? "password" : "text";
       if (f.type === "date" && ENTRY_DATE_FIELD_KEYS.indexOf(f.key) !== -1) {
         var minStr = minEntryDateStr(countryId);
         if (minStr) input.min = minStr;
