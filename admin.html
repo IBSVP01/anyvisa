@@ -2060,7 +2060,7 @@ function renderQueueItem(item) {
     : " <i style='color:var(--n-400)'>(file not available)</i>";
   div.innerHTML =
     "<div>" +
-    "<div class='who'>" + item.userEmail + " · " + item.country + ", " + item.purpose + "</div>" +
+    "<div class='who'>" + item.userEmail + " · " + item.country + "</div>" +
     "<div class='doc'>" + item.docType + " — " + item.reason + (item.fix ? " <i>(suggested fix: " + item.fix + ")</i>" : "") + downloadHtml + "</div>" +
     "</div>" +
     "<span class='ai-flag'>⚠ " + (item.status === "failed" ? "Failed" : "Needs review") + "</span>" +
