@@ -982,6 +982,9 @@ footer a { color: var(--n-500); }
 .book-badge { font-size: var(--fs-xs); font-weight: 700; padding: 4px 10px; border-radius: 999px; white-space: nowrap; }
 .book-badge.booked { background: var(--ok-tint); color: var(--ok); }
 .book-badge.not_booked { background: var(--n-100); color: var(--n-500); }
+.paid-badge { font-size: var(--fs-xs); font-weight: 700; padding: 4px 10px; border-radius: 999px; white-space: nowrap; }
+.paid-badge.paid { background: var(--ok-tint); color: var(--ok); }
+.paid-badge.unpaid { background: #fdf3e0; color: var(--warn); }
 .app-admin-body { display: none; border-top: 1px solid var(--n-200); padding: var(--s-4); background: var(--n-50); }
 
 .manage-row td { padding: 0 !important; }
@@ -2215,6 +2218,7 @@ function renderAppAdminCard(app) {
     "<div><div class='who'>" + app.userEmail + " (" + (app.userName || "no name") + ")</div>" +
     "<div class='doc'>" + app.country + " · " + app.travelers + " traveler(s)" + (app.submissionCity ? " · submitting in " + app.submissionCity : "") + " · created " + app.createdAt + "</div></div>" +
     "<span class='q-badge " + qClass + "'>" + qLabel + "</span>" +
+    "<span class='paid-badge " + (app.paid ? "paid" : "unpaid") + "'>" + (app.paid ? "✓ Paid" : "Not paid") + "</span>" +
     "<span class='book-badge " + bClass + "'>" + bLabel + "</span>" +
     "<button type='button' class='btn btn-secondary admin-delete-app-btn' style='color:var(--err);border-color:var(--err);min-height:32px;padding:0 12px;font-size:12px'>Delete</button>" +
     "<span style='color:var(--n-400);font-weight:700'>▾</span>" +
@@ -2699,7 +2703,7 @@ document.getElementById("crm-save-btn").addEventListener("click", function () {
   req.then(function (res) { return res.json().then(function (data) { return { ok: res.ok, status: res.status, data: data }; }); })
     .then(function (r) {
       if (!r.ok) {
-        if (r.status === 409) { status.style.color = "var(--err)"; status.textContent = "A client with this name and date of birth already exists — not adding a duplicate."; return; }
+        if (r.status === 409) { status.style.color = "var(--err)"; status.textContent = "A client with this name and date of birth (or name and email) already exists — not adding a duplicate."; return; }
         status.style.color = "var(--err)"; status.textContent = r.data.error || "Could not save.";
         return;
       }

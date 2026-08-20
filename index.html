@@ -1897,15 +1897,9 @@ footer a { color: var(--n-500); }
           </div>
 
           <div class="admin-table" id="payment-section" style="padding:var(--s-5);margin:var(--s-4) 0;text-align:center">
-            <p class="note" style="margin:0 0 var(--s-3)">Everything's filled in — pay now to send your application and documents for processing.</p>
+            <p class="note" style="margin:0 0 var(--s-3)">Everything's filled in — pay now to send your application for processing. You can keep uploading and reviewing documents afterwards.</p>
             <button class="btn btn-primary" id="pay-now-btn" type="button" disabled style="min-height:44px;padding:0 24px">Pay now</button>
             <p id="pay-status" style="font-size:var(--fs-xs);color:var(--err);margin-top:var(--s-3)"></p>
-          </div>
-
-          <div class="admin-table" id="skip-docs-payment-section" style="padding:var(--s-5);margin:var(--s-4) 0;text-align:center;background:var(--n-50)">
-            <p class="note" style="margin:0 0 var(--s-3)">Prefer to pay now and finish uploading documents later? You can skip document verification and pay straight away.</p>
-            <button class="btn btn-secondary" id="skip-docs-pay-btn" type="button" disabled style="min-height:40px;padding:0 20px">Skip document review — pay now</button>
-            <p id="skip-docs-pay-status" style="font-size:var(--fs-xs);color:var(--err);margin-top:var(--s-3)"></p>
           </div>
 
           <div class="admin-table" id="paid-confirmation" style="padding:var(--s-5);margin:var(--s-4) 0;display:none;background:var(--ok-tint);border-color:#bfe3d2">
@@ -3153,6 +3147,13 @@ function openDocumentChecklist(application) {
       }
       updateQuestCompleteBadge(q.complete);
       showMissingFieldsNotice(q.fields);
+      // updatePaymentSection() was already called synchronously when this
+      // application was opened (before this questionnaire fetch resolved),
+      // using whatever stale text was left in quest-complete-badge from
+      // before — often empty, which would wrongly disable "Pay now" and
+      // leave it stuck disabled forever, even once the badge above updates
+      // to "✓ Complete". Re-run it now that q.complete is the real answer.
+      if (currentChecklistApp && currentChecklistApp.id === application.id) updatePaymentSection(currentChecklistApp);
     });
 
   var checklist = document.getElementById("doc-checklist");
@@ -3621,45 +3622,21 @@ document.getElementById("promo-remove-link").addEventListener("click", function 
 
 function updatePaymentSection(application) {
   var paySection = document.getElementById("payment-section");
-  var skipDocsSection = document.getElementById("skip-docs-payment-section");
   var payNowBtn = document.getElementById("pay-now-btn");
-  var skipDocsPayBtn = document.getElementById("skip-docs-pay-btn");
   var paidConfirmation = document.getElementById("paid-confirmation");
 
   if (application.paid) {
     paySection.style.display = "none";
-    skipDocsSection.style.display = "none";
     paidConfirmation.style.display = "block";
     return;
   }
   paidConfirmation.style.display = "none";
   paySection.style.display = "block";
-  skipDocsSection.style.display = "block";
 
+  // Document review is optional — the only thing gating payment is a
+  // complete questionnaire. Whatever's been uploaded so far doesn't matter.
   var questComplete = document.getElementById("quest-complete-badge").textContent.indexOf("Complete") !== -1;
-  skipDocsPayBtn.disabled = !questComplete;
-  if (!questComplete) {
-    payNowBtn.disabled = true;
-    return;
-  }
-
-  // Ask the server whether every required document has a real record on
-  // file — this is the same check pay() itself enforces, so there's no
-  // risk of the button becoming clickable when the server would actually
-  // reject it (e.g. a document whose AI review errored out never got saved
-  // at all).
-  Promise.all([
-    fetch(API_BASE + "/api/countries/" + application.countryId + "/documents?applicationId=" + encodeURIComponent(application.id), { credentials: "include" })
-      .then(function (res) { return res.ok ? res.json() : []; }).catch(function () { return []; }),
-    fetch(API_BASE + "/api/documents?applicationId=" + application.id, {
-      credentials: "include", headers: { "Authorization": "Bearer " + authToken }
-    }).then(function (res) { return res.ok ? res.json() : []; }).catch(function () { return []; })
-  ]).then(function (results) {
-    var required = results[0].map(function (d) { return d.docType; });
-    var uploaded = results[1].map(function (d) { return d.docType; });
-    var allUploaded = required.length > 0 && required.every(function (t) { return uploaded.indexOf(t) !== -1; });
-    payNowBtn.disabled = !allUploaded;
-  });
+  payNowBtn.disabled = !questComplete;
 }
 
 var continueToPaymentBtn = document.getElementById("continue-to-payment");
@@ -3677,8 +3654,6 @@ window.addEventListener("pageshow", function (e) {
   if (!e.persisted) return;
   var payBtn = document.getElementById("pay-now-btn");
   if (payBtn) { payBtn.disabled = false; payBtn.textContent = "Pay now"; }
-  var skipBtn = document.getElementById("skip-docs-pay-btn");
-  if (skipBtn) { skipBtn.disabled = false; skipBtn.textContent = "Skip document review — pay now"; }
   var applyBtn = document.getElementById("promo-apply-btn");
   if (applyBtn) applyBtn.disabled = false;
   if (currentChecklistApp) updatePaymentSection(currentChecklistApp);
@@ -3712,38 +3687,6 @@ if (payNowBtn) {
       .catch(function () {
         payNowBtn.disabled = false;
         payNowBtn.textContent = "Pay now";
-        status.textContent = "Couldn't reach the server — try again.";
-      });
-  });
-}
-
-var skipDocsPayBtn = document.getElementById("skip-docs-pay-btn");
-if (skipDocsPayBtn) {
-  skipDocsPayBtn.addEventListener("click", function () {
-    if (!currentChecklistApp) return;
-    if (!confirm("Pay now without finishing document review? You can still upload the rest of your documents afterwards.")) return;
-    var status = document.getElementById("skip-docs-pay-status");
-    status.textContent = "";
-    skipDocsPayBtn.disabled = true;
-    skipDocsPayBtn.textContent = "Redirecting to secure checkout…";
-    fetch(API_BASE + "/api/applications/" + currentChecklistApp.id + "/create-checkout-session", {
-      method: "POST", credentials: "include",
-      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + authToken },
-      body: JSON.stringify({ skipDocuments: true })
-    })
-      .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
-      .then(function (r) {
-        if (!r.ok) {
-          skipDocsPayBtn.disabled = false;
-          skipDocsPayBtn.textContent = "Skip document review — pay now";
-          status.textContent = r.data.error || "Could not start checkout — try again.";
-          return;
-        }
-        window.location.href = r.data.url;
-      })
-      .catch(function () {
-        skipDocsPayBtn.disabled = false;
-        skipDocsPayBtn.textContent = "Skip document review — pay now";
         status.textContent = "Couldn't reach the server — try again.";
       });
   });
